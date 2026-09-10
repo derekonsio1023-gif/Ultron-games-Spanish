@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Reproductor SWF con Ruffle</title>
+    <style>
+        #contenedor-flash {
+            width: 800px;
+            height: 600px;
+            margin: 20px auto;
+            border: 2px solid #333;
+            background: #000; /* Fondo negro mientras carga */
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 1. El contenedor donde se cargará el archivo Flash -->
+    <div id="contenedor-flash"></div>
+
+    <!-- 2. Declaramos el objeto RufflePlayer ANTES de cargar la librería -->
+    <script>
+        window.RufflePlayer = window.RufflePlayer || {};
+    </script>
+
+    <!-- 3. Importamos la librería de Ruffle desde su CDN oficial -->
+    <script src="https://unpkg.com/@ruffle-rs/ruffle"></script>
+
+    <!-- 4. Inicializamos el reproductor asegurando que TODO esté cargado -->
+    <script>
+        window.addEventListener("load", () => {
+            // Evaluamos si Ruffle se registró correctamente en la ventana
+            if (window.RufflePlayer && typeof window.RufflePlayer.newest === "function") {
+                const ruffle = window.RufflePlayer.newest();
+                const player = ruffle.createPlayer();
+                
+                const contenedor = document.getElementById("contenedor-flash");
+                contenedor.appendChild(player);
+                
+                // Cargamos el archivo .swf (Reemplaza la ruta por la tuya)
+                player.load({
+                    url: "https://rawcdn.githack.com/zaka13alt/assets/300ed9885585131efb4e07f26bb835e100e542ff/swf/trollface-quest-6.swf",
+                    autoplay: "on"
+                });
+            } else {
+                console.error("No se pudo cargar el motor de Ruffle correctamente.");
+            }
+        });
+    </script>
+
+</body>
+</html>
