@@ -1143,8 +1143,8 @@
     }
     function actualizarContadoresUI(){ document.querySelectorAll('#main-grid .card').forEach(card=>{ const slot=Number(card.dataset.slot||0); const game=CONFIG[slot]; const count=game?getGameCount(game,slot):0; const countEl=card.querySelector('.card-popularity'); if(countEl) countEl.textContent=`👥 ${count}`; }); }
 
-const INTRO_LOGO_URL = window.ULTRON_INTRO_LOGO
-    || 'https://raw.githack.com/derekonsio1023-gif/Ultron-games/main/assets/Watermark.pdf';
+const INTRO_LOGO_URL = window.INTRO_LOGO_URL
+    || 'https://raw.githack.com/derekonsio1023-gif/Ultron-games/main/assets/Watermark.png';
 
 function reproducirIntroCinematica(onComplete){
     const intro=document.getElementById('intro-transition');
