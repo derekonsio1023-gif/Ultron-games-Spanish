@@ -27,7 +27,7 @@
         
         header { text-align: center; padding: 40px 20px; }
         h1 { 
-            margin: 0; font-size: 5rem; font-weight: 900; letter-spacing: 5px; 
+            margin: 0; font-size: clamp(4rem, 15vw, 14rem); font-weight: 900; letter-spacing: 5px; 
             color: var(--neon-blue); text-shadow: 0 0 20px rgba(0, 210, 255, 0.5); 
             text-transform: uppercase; 
         }
@@ -335,7 +335,7 @@
         @keyframes panel-sweep { 0% { transform: translateX(-55%); opacity: 0; } 12% { opacity: 0.45; } 50% { opacity: 0.18; } 100% { transform: translateX(55%); opacity: 0; } }
         @media (max-width: 700px) { .loading-panels { grid-template-columns: 1fr; } }
 
-        /* ── TRANSICIÓN CINEMÁTICA POST-CARGA ── */
+        /* ── TRANSICIÓN CINEMÁTICA POST-CARGA (estilo SEGA) ── */
         #intro-transition {
             position: fixed;
             inset: 0;
@@ -350,58 +350,23 @@
         #intro-transition.active {
             display: flex;
         }
-        /* Halo de fondo que crece con el brillo */
-        #intro-transition .intro-halo {
-            position: absolute;
-            width: 60vmin;
-            height: 60vmin;
-            border-radius: 50%;
-            background: radial-gradient(circle, rgba(0,210,255,0.55) 0%, rgba(0,210,255,0.20) 35%, transparent 70%);
-            filter: blur(30px);
-            opacity: 0;
-            transform: scale(0.2);
-            animation: intro-halo-grow 3s ease-out forwards;
-        }
-        /* El logo que aparece con escala + brillo */
+        /* El logo aparece, se mantiene y desaparece — sin halo, sin brillo extra */
         #intro-transition .intro-logo {
-            width: 30vmin;
-            max-width: 260px;
+            width: 70vmin;
+            max-width: 600px;
             height: auto;
             object-fit: contain;
             opacity: 0;
-            transform: scale(0.2);
-            filter: brightness(0) drop-shadow(0 0 0 rgba(0,210,255,0));
-            animation: intro-logo-appear 3s ease-out forwards;
+            transform: scale(0.6);
+            animation: intro-logo-sega 5s ease-in-out forwards;
             z-index: 2;
-            will-change: transform, opacity, filter;
+            will-change: transform, opacity;
         }
-        /* El fade final hacia negro */
-        #intro-transition .intro-fade {
-            position: absolute;
-            inset: 0;
-            background: #000;
-            opacity: 0;
-            animation: intro-fade-out 3s ease-in forwards;
-            z-index: 3;
-            pointer-events: none;
-        }
-        @keyframes intro-halo-grow {
-            0%   { opacity: 0;    transform: scale(0.2); }
-            40%  { opacity: 0.9;  transform: scale(1.0); }
-            70%  { opacity: 0.85; transform: scale(1.15); }
-            100% { opacity: 0.0;  transform: scale(1.6); }
-        }
-        @keyframes intro-logo-appear {
-            0%   { opacity: 0;    transform: scale(0.2); filter: brightness(0)   drop-shadow(0 0 0    rgba(0,210,255,0)); }
-            35%  { opacity: 1;    transform: scale(1.05); filter: brightness(2.5) drop-shadow(0 0 40px rgba(0,210,255,0.95)); }
-            60%  { opacity: 1;    transform: scale(1.00); filter: brightness(1.3) drop-shadow(0 0 25px rgba(0,210,255,0.7)); }
-            85%  { opacity: 0.85; transform: scale(1.15); filter: brightness(0.8) drop-shadow(0 0 15px rgba(255,0,85,0.6)); }
-            100% { opacity: 0;    transform: scale(1.35); filter: brightness(0)   drop-shadow(0 0 0    rgba(0,0,0,0)); }
-        }
-        @keyframes intro-fade-out {
-            0%, 55% { opacity: 0; }
-            85%     { opacity: 0.85; }
-            100%    { opacity: 1; }
+        @keyframes intro-logo-sega {
+            0%   { opacity: 0; transform: scale(0.6); }
+            15%  { opacity: 1; transform: scale(1.0); }
+            75%  { opacity: 1; transform: scale(1.0); }
+            100% { opacity: 0; transform: scale(1.0); }
         }
 
         #game-runtime { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 9998; display: none; }
@@ -586,11 +551,9 @@
     <div class="loading-panels"><div class="loading-panel"><div class="loading-panel-title">Recomendaciones</div><div class="loading-panel-body" id="loading-recommendation"></div></div><div class="loading-panel"><div class="loading-panel-title">Noticias</div><div class="loading-panel-body" id="loading-news"></div></div></div>
 </div>
 
-<!-- ── TRANSICIÓN CINEMÁTICA (solo aparece tras la carga) ── -->
+<!-- ── TRANSICIÓN CINEMÁTICA estilo SEGA (solo aparece tras la carga) ── -->
 <div id="intro-transition" aria-hidden="true">
-    <div class="intro-halo"></div>
     <img id="intro-logo-img" class="intro-logo" src="" alt="Ultron intro">
-    <div class="intro-fade"></div>
 </div>
 
 <div id="game-runtime"><button id="back-btn" onclick="cerrarJuego()">Desconectar</button><iframe id="game-frame" allow="camera *; microphone *; autoplay"></iframe></div>
@@ -1020,7 +983,7 @@
     const STORAGE_KEY = 'ultron_play_counts_v2_local_fallback';
     const LOADING_LOGO_URL = window.ULTRON_LOGO_URL || 'https://raw.githack.com/derekonsio1023-gif/Ultron-games/main/assets/logo.png';
     const ULTRON_LOGO_URL = window.ULTRON_HEADER_LOGO_URL || 'https://raw.githack.com/derekonsio1023-gif/Ultron-games/main/assets/UltronT.png';
-    // Audio de 3 s para la transición (cámbialo por el tuyo)
+    // Audio de 5 s para la transición (cámbialo por el tuyo)
     const INTRO_SOUND_URL = window.ULTRON_INTRO_SOUND || 'https://raw.githack.com/derekonsio1023-gif/Ultron-games-Spanish/main/assets/Ultron.mp3';
     const LOADING_CONTENT = window.ULTRON_LOADING_CONTENT || { recomendaciones: [ { titulo: 'Prueba Google desbloqueado', detalle: 'Acceso rápido con protección visual y una interfaz más limpia.' }, { titulo: 'Reanudar último juego', detalle: 'Vuelve donde lo dejaste sin perder el progreso.' } ], noticias: [ { titulo: 'Anuncio neón', detalle: 'Un bloque destacado para llamar la atención en la portada.' }, { titulo: 'Carga adaptativa', detalle: 'La barra se ajusta al juego que abras.' } ] };
 
@@ -1143,26 +1106,26 @@
     }
     function actualizarContadoresUI(){ document.querySelectorAll('#main-grid .card').forEach(card=>{ const slot=Number(card.dataset.slot||0); const game=CONFIG[slot]; const count=game?getGameCount(game,slot):0; const countEl=card.querySelector('.card-popularity'); if(countEl) countEl.textContent=`👥 ${count}`; }); }
 
-const ULTRON_INTRO_LOGO = window.ULTRON_INTRO_LOGO
-    || 'https://raw.githack.com/derekonsio1023-gif/Ultron-games/main/assets/Watermark.png';
+    const ULTRON_INTRO_LOGO = window.ULTRON_INTRO_LOGO
+        || 'https://raw.githack.com/derekonsio1023-gif/Ultron-games/main/assets/Watermark.png';
 
-function reproducirIntroCinematica(onComplete){
-    const intro=document.getElementById('intro-transition');
-    const img=document.getElementById('intro-logo-img');
-    img.src=ULTRON_INTRO_LOGO;     // ← logo grande de Ultron
+    function reproducirIntroCinematica(onComplete){
+        const intro=document.getElementById('intro-transition');
+        const img=document.getElementById('intro-logo-img');
+        img.src=ULTRON_INTRO_LOGO;
         // Reiniciar animaciones
         intro.classList.remove('active');
         void intro.offsetWidth; // reflow
         intro.classList.add('active');
-        // Audio (3 s aprox.)
+        // Audio (5 s aprox.)
         try {
             if(!introAudioEl){ introAudioEl=new Audio(INTRO_SOUND_URL); introAudioEl.preload='auto'; introAudioEl.volume=0.9; }
             introAudioEl.currentTime=0;
             const p=introAudioEl.play();
             if(p&&p.catch) p.catch(()=>{});
         } catch(e){}
-        // 3 segundos exactos de cinemática
-        const DURATION=3000;
+        // 5 segundos exactos de cinemática
+        const DURATION=5000;
         setTimeout(()=>{
             intro.classList.remove('active');
             if(typeof onComplete==='function') onComplete();
