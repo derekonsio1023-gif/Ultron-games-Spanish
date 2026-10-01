@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en-us">
+<head>
+  <meta charset="utf-8">
+  <title>Trees Hate You</title>
+  <style>
+    body { background: #000; margin: 0; overflow: hidden; font-family: Arial, sans-serif; }
+    #unity-canvas { width: 100vw; height: 100vh; display: block; }
+    #loading-screen { 
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+      background: #111; display: flex; flex-direction: column; 
+      justify-content: center; align-items: center; color: white; z-index: 10;
+    }
+    #loading-text { font-size: 24px; margin-bottom: 20px; font-weight: normal; }
+    #progress-container { width: 300px; height: 10px; background: #333; border-radius: 5px; overflow: hidden; }
+    #progress-bar { width: 0%; height: 100%; background: #007bff; transition: width 0.2s; }
+  </style>
+</head>
+<body>
+  <div id="loading-screen">
+    <div id="loading-text">Loading... 0%</div>
+    <div id="progress-container">
+      <div id="progress-bar"></div>
+    </div>
+  </div>
+  <canvas id="unity-canvas" tabindex="-1"></canvas>
+  
+  <script>
+    // Pointing to your specific GitHub repo via jsDelivr
+    // Replace with your actual github repo
+    const REPO_URL = "https://cdn.jsdelivr.net/gh/thirstygithub/fugglelatougin@main/Build/";
+    
+    const canvas = document.querySelector("#unity-canvas");
+    const loadingScreen = document.querySelector("#loading-screen");
+    const loadingText = document.querySelector("#loading-text");
+    const progressBar = document.querySelector("#progress-bar");
+
+    function updateProgress(text, percent) {
+      if (text) loadingText.innerText = text;
+      if (percent !== null) {
+        progressBar.style.width = percent + "%";
+      }
+    }
+
+    async function fetchChunks(filename, numChunks) {
+      let totalLength = 0;
+      const buffers = [];
+      for (let i = 0; i < numChunks; i++) {
+        updateProgress(`Downloading ${filename}... (${i+1}/${numChunks})`, (i / numChunks) * 100);
+        const res = await fetch(`${REPO_URL}${filename}.part${i}`);
+        if (!res.ok) throw new Error(`Failed to download ${filename}.part${i}`);
+        const buf = await res.arrayBuffer();
+        buffers.push(buf);
+        totalLength += buf.byteLength;
+      }
+      
+      const combined = new Uint8Array(totalLength);
+      let offset = 0;
+      for (const buf of buffers) {
+        combined.set(new Uint8Array(buf), offset);
+        offset += buf.byteLength;
+      }
+      return combined;
+    }
+
+    async function loadGame() {
+      try {
+        updateProgress("Loading brotli decompressor...", 5);
+        const brotliModule = await import('https://unpkg.com/brotli-wasm@3.0.0/index.web.js?module');
+        const brotli = await brotliModule.default;
+
+        updateProgress("Downloading data...", 10);
+        const compressedData = await fetchChunks("TreesHateYou_Web.data.br", 5); 
+        
+        updateProgress("Decompressing data assets...", 30);
+        await new Promise(r => setTimeout(r, 50)); 
+        const decompressedData = brotli.decompress(compressedData);
+        
+        const dataBlob = new Blob([decompressedData]);
+        const dataUrl = URL.createObjectURL(dataBlob);
+
+        updateProgress("Loading framework...", 40);
+        const fwRes = await fetch(`${REPO_URL}TreesHateYou_Web.framework.js.br`);
+        if (!fwRes.ok) throw new Error("Failed to download framework");
+        const fwDec = brotli.decompress(new Uint8Array(await fwRes.arrayBuffer()));
+        const fwUrl = URL.createObjectURL(new Blob([fwDec], {type: "application/javascript"}));
+
+        updateProgress("Downloading WebAssembly...", 50);
+        // The wasm file is 70MB, so it was chunked into 4 parts!
+        const wasmCompressed = await fetchChunks("TreesHateYou_Web.wasm.br", 4);
+        
+        updateProgress("Decompressing WebAssembly...", 80);
+        await new Promise(r => setTimeout(r, 50));
+        const wasmDec = brotli.decompress(wasmCompressed);
+        const wasmUrl = URL.createObjectURL(new Blob([wasmDec], {type: "application/wasm"}));
+
+        const config = {
+          dataUrl: dataUrl,
+          frameworkUrl: fwUrl,
+          codeUrl: wasmUrl,
+          companyName: "tykenn games",
+          productName: "Trees Hate You",
+          productVersion: "0.1.0",
+        };
+
+        updateProgress("Initializing engine...", 90);
+        
+        const script = document.createElement("script");
+        script.src = `${REPO_URL}TreesHateYou_Web.loader.js`;
+        script.onload = () => {
+          createUnityInstance(canvas, config, (progress) => {
+            updateProgress(`Loading... ${Math.round(progress * 100)}%`, 90 + (progress * 10));
+          }).then((unityInstance) => {
+            loadingScreen.style.display = "none";
+          }).catch(err => {
+            updateProgress("Engine error: " + err.message, null);
+          });
+        };
+        document.body.appendChild(script);
+
+      } catch (err) {
+        updateProgress("Error: " + err.message, null);
+        console.error(err);
+      }
+    }
+
+    loadGame();
+  </script>
+</body>
+</html>
