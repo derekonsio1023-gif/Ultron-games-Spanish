@@ -6,7 +6,6 @@
     <title>ULTRON AI</title>
     <link rel="icon" href="https://raw.githack.com/derekonsio1023-gif/Ultron-games/main/assets/logo.png?v=1">
     <meta name="theme-color" content="#00ffff">
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root { 
             --bg-color: #050508; 
@@ -14,6 +13,7 @@
             --border-color: #16192b; 
             --neon-blue: #00d2ff; 
             --neon-pink: #ff0055; 
+            --neon-green: #39ff14;
         }
 
         * { box-sizing: border-box; }
@@ -21,11 +21,12 @@
         body, html { 
             margin: 0; padding: 0; width: 100%; height: 100%; 
             background-color: var(--bg-color); 
-            font-family: 'Segoe UI', sans-serif; color: white; 
+            font-family: 'Comic Sans MS', 'Comic Sans', 'Chalkboard SE', 'Comic Neue', cursive, sans-serif;
+            color: white; 
             overflow-x: hidden; 
         }
 
-        /* ── BOTÓN DE CATEGORÍAS ARRIBA IZQUIERDA ── */
+        /* ── BOTÓN DEL LOGO (arriba izquierda) ── */
         #menu-toggle {
             position: fixed; top: 20px; left: 20px; z-index: 500;
             width: 64px; height: 64px; border-radius: 16px;
@@ -46,68 +47,26 @@
             filter: drop-shadow(0 0 10px rgba(0,210,255,0.7));
         }
 
-        /* ── PANEL LATERAL DE CATEGORÍAS ── */
-        #side-panel {
-            position: fixed; top: 0; left: 0; height: 100vh;
-            width: 320px; max-width: 85vw;
-            background: linear-gradient(180deg, rgba(8,10,18,0.98), rgba(5,8,14,0.98));
-            border-right: 2px solid rgba(0,210,255,0.35);
-            box-shadow: 8px 0 40px rgba(0,210,255,0.18);
-            z-index: 600; padding: 90px 18px 30px;
-            overflow-y: auto;
-            transform: translateX(-105%);
-            transition: transform 0.35s cubic-bezier(0.22,1,0.36,1);
-            backdrop-filter: blur(14px);
-        }
-        #side-panel.open { transform: translateX(0); }
-        #side-panel::-webkit-scrollbar { width: 6px; }
-        #side-panel::-webkit-scrollbar-thumb { background: rgba(0,210,255,0.4); border-radius: 3px; }
-
-        .side-panel-title {
-            font-size: 0.75rem; letter-spacing: 3px; text-transform: uppercase;
-            color: rgba(0,210,255,0.7); font-weight: 900;
-            margin: 0 0 16px 8px;
-        }
-
-        .cat-btn {
-            display: flex; align-items: center; gap: 14px;
-            width: 100%; text-align: left;
-            background: transparent;
-            border: 1px solid rgba(0,210,255,0.14);
-            border-radius: 14px; padding: 12px 14px;
+        /* ── BOTÓN PROXY (debajo del logo) ── */
+        #proxy-toggle {
+            position: fixed; top: 94px; left: 20px; z-index: 500;
+            width: 64px; height: 64px; border-radius: 16px;
+            background: linear-gradient(135deg, rgba(57,255,20,0.18), rgba(0,210,255,0.10));
+            border: 2px solid rgba(57,255,20,0.45);
+            display: flex; align-items: center; justify-content: center;
             cursor: pointer; user-select: none;
-            transition: all 0.2s ease;
-            color: #e8faff; font-weight: 800; font-size: 0.82rem;
-            letter-spacing: 0.4px; text-transform: uppercase;
-            margin-bottom: 8px;
+            transition: all 0.25s ease;
+            box-shadow: 0 0 22px rgba(57,255,20,0.25);
         }
-        .cat-btn:hover {
-            border-color: var(--neon-blue);
-            background: rgba(0,210,255,0.08);
-            transform: translateX(4px);
-            box-shadow: 0 0 16px rgba(0,210,255,0.2);
+        #proxy-toggle:hover {
+            border-color: var(--neon-green);
+            box-shadow: 0 0 32px rgba(57,255,20,0.55);
+            transform: translateY(-2px);
         }
-        .cat-btn.active {
-            border-color: var(--neon-blue);
-            background: linear-gradient(90deg, rgba(0,210,255,0.22), rgba(255,0,85,0.12));
-            box-shadow: 0 0 22px rgba(0,210,255,0.4);
+        #proxy-toggle img {
+            width: 42px; height: 42px; object-fit: contain;
+            filter: drop-shadow(0 0 10px rgba(57,255,20,0.7));
         }
-        .cat-icon {
-            width: 30px; height: 30px; object-fit: contain;
-            flex-shrink: 0;
-            filter: drop-shadow(0 0 8px rgba(0,210,255,0.55));
-        }
-        .cat-label { flex: 1; }
-
-        /* ── OVERLAY ── */
-        #panel-overlay {
-            position: fixed; inset: 0; z-index: 550;
-            background: rgba(0,0,0,0.45);
-            opacity: 0; pointer-events: none;
-            transition: opacity 0.3s ease;
-            backdrop-filter: blur(2px);
-        }
-        #panel-overlay.active { opacity: 1; pointer-events: auto; }
 
         /* ── HEADER Y TÍTULO CENTRADO ── */
         header.hero-header {
@@ -176,23 +135,62 @@
             text-transform: uppercase; color: #fff; width: 100%; 
             overflow: hidden; text-overflow: ellipsis; white-space: nowrap; 
         }
-        .card-meta {
-            display: flex; align-items: center; justify-content: center;
-            gap: 8px; margin-top: 4px; flex-wrap: wrap;
-        }
-        .card-popularity {
-            font-size: 0.64rem; color: #7df9ff; font-weight: 800;
-            padding: 3px 8px; border-radius: 999px;
-            background: rgba(0, 210, 255, 0.12);
-            border: 1px solid rgba(0, 210, 255, 0.22);
-            white-space: nowrap;
-        }
         .card.hidden { display: none !important; }
 
-        /* ── BUSCADOR MINIMALISTA ── */
+        /* ── CARD RANDOM ── */
+        .card.card-random {
+            border-color: var(--neon-blue);
+            box-shadow: 0 0 22px rgba(0,210,255,0.35);
+        }
+        .card.card-random:hover {
+            border-color: var(--neon-blue);
+            box-shadow: 0 0 38px rgba(0,210,255,0.7);
+        }
+
+        /* ── CARD NUEVO (verde neón + burbujas) ── */
+        .card.nuevo {
+            border-color: var(--neon-green);
+            box-shadow: 0 0 22px rgba(57,255,20,0.4), 0 0 40px rgba(57,255,20,0.15);
+        }
+        .card.nuevo:hover {
+            border-color: var(--neon-green);
+            box-shadow: 0 0 40px rgba(57,255,20,0.8), 0 0 70px rgba(57,255,20,0.35);
+        }
+        .card.nuevo .card-footer {
+            background: linear-gradient(to bottom, #071a07, #050508);
+            border-top: 1px solid rgba(57,255,20,0.35);
+        }
+        .card.nuevo .card-title { color: var(--neon-green); text-shadow: 0 0 8px rgba(57,255,20,0.6); }
+        .nuevo-bubble {
+            position: absolute;
+            bottom: -12px;
+            background: var(--neon-green);
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--neon-green), 0 0 20px rgba(57,255,20,0.55);
+            animation: bubble-up linear infinite;
+            pointer-events: none;
+            z-index: 3;
+        }
+        @keyframes bubble-up {
+            0%   { transform: translateY(0) scale(0.3); opacity: 0; }
+            15%  { opacity: 1; }
+            85%  { opacity: 0.6; }
+            100% { transform: translateY(-320px) scale(1.2); opacity: 0; }
+        }
+        .card-badge-nuevo {
+            position: absolute; top: 8px; right: 8px; z-index: 4;
+            background: var(--neon-green); color: #051007;
+            font-weight: 900; font-size: 0.62rem; letter-spacing: 1px;
+            padding: 3px 8px; border-radius: 999px;
+            box-shadow: 0 0 14px rgba(57,255,20,0.8);
+            text-transform: uppercase;
+        }
+
+        /* ── BUSCADOR + CATEGORÍAS ── */
         .search-wrapper {
             position: sticky; top: 14px; z-index: 50;
-            margin: 0 auto 24px auto; max-width: 620px;
+            margin: 0 auto 24px auto; max-width: 1400px;
+            display: flex; flex-direction: column; gap: 14px;
         }
         .search-bar {
             display: flex; align-items: center; gap: 10px;
@@ -201,14 +199,49 @@
             border-radius: 999px; padding: 10px 22px;
             backdrop-filter: blur(12px);
             transition: border-color 0.2s, box-shadow 0.2s;
+            max-width: 620px;
+            margin: 0 auto;
+            width: 100%;
         }
         .search-bar:focus-within {
             border-color: rgba(0,210,255,0.75);
             box-shadow: 0 0 22px rgba(0,210,255,0.3);
         }
         .search-icon { font-size: 1rem; color: var(--neon-blue); flex: 0 0 auto; user-select: none; }
-        #search-input { width: 100%; border: none; outline: none; background: transparent; color: white; font-size: 0.95rem; font-weight: 600; letter-spacing: 0.3px; }
+        #search-input { width: 100%; border: none; outline: none; background: transparent; color: white; font-size: 0.95rem; font-weight: 600; letter-spacing: 0.3px; font-family: inherit; }
         #search-input::placeholder { color: rgba(255,255,255,0.35); font-weight: 500; }
+
+        /* ── BARRA DE CATEGORÍAS HORIZONTAL (más grande) ── */
+        .category-bar {
+            display: flex; flex-wrap: wrap; gap: 10px;
+            justify-content: center;
+            padding: 4px 6px;
+        }
+        .cat-btn {
+            width: 58px; height: 58px; border-radius: 50%;
+            padding: 9px;
+            background: rgba(5,8,16,0.9);
+            border: 2px solid rgba(0,210,255,0.25);
+            display: grid; place-items: center;
+            cursor: pointer; user-select: none;
+            transition: all 0.2s ease;
+            flex: 0 0 auto;
+        }
+        .cat-btn:hover {
+            border-color: var(--neon-blue);
+            box-shadow: 0 0 18px rgba(0,210,255,0.45);
+            transform: translateY(-2px);
+        }
+        .cat-btn.active {
+            border-color: var(--neon-blue);
+            background: linear-gradient(135deg, rgba(0,210,255,0.28), rgba(255,0,85,0.18));
+            box-shadow: 0 0 22px rgba(0,210,255,0.65);
+        }
+        .cat-btn .cat-icon {
+            width: 34px; height: 34px; object-fit: contain;
+            filter: drop-shadow(0 0 6px rgba(0,210,255,0.6));
+            pointer-events: none;
+        }
 
         /* ── ORDENAR ── */
         .sort-wrap {
@@ -226,6 +259,7 @@
             color: white; border-radius: 12px;
             padding: 10px 12px; font-weight: 700;
             outline: none; cursor: pointer;
+            font-family: inherit;
         }
 
         /* ── PAGINACIÓN ── */
@@ -239,6 +273,7 @@
             color: #fff; font-weight: 800; font-size: 0.85rem;
             padding: 10px 16px; border-radius: 12px; cursor: pointer;
             transition: all 0.2s ease; min-width: 42px;
+            font-family: inherit;
         }
         .page-btn:hover:not(:disabled) {
             border-color: var(--neon-blue);
@@ -256,7 +291,7 @@
             font-weight: 700; letter-spacing: 1px; margin: 0 8px;
         }
 
-        /* ── SUGERENCIAS (estilo original neón rosa/morado) ── */
+        /* ── SUGERENCIAS ── */
         .suggestions-box {
             margin: 40px 0 20px; position: relative;
             border-radius: 28px; padding: 4px;
@@ -304,6 +339,7 @@
             border-radius: 14px; padding: 12px 16px;
             color: #fff; font-size: 0.9rem; font-weight: 600;
             outline: none; transition: border-color 0.2s, box-shadow 0.2s;
+            font-family: inherit;
         }
         .suggestions-input:focus {
             border-color: rgba(255,0,85,0.62);
@@ -315,6 +351,7 @@
             border: none; border-radius: 14px; padding: 12px 22px;
             color: #fff; font-weight: 900; font-size: 0.9rem;
             cursor: pointer; transition: all 0.2s ease; white-space: nowrap;
+            font-family: inherit;
         }
         .suggestions-send-btn:hover { transform: translateY(-2px); box-shadow: 0 0 18px rgba(255,0,85,0.35); }
         .suggestions-send-btn:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -387,7 +424,7 @@
 
         #game-runtime { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 9998; display: none; }
         #game-frame { width: 100%; height: 100%; border: none; }
-        #back-btn { position: fixed; bottom: 25px; right: 25px; z-index: 9999; padding: 12px 25px; background: var(--neon-pink); color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; text-transform: uppercase; box-shadow: 0 0 15px var(--neon-pink); }
+        #back-btn { position: fixed; bottom: 25px; right: 25px; z-index: 9999; padding: 12px 25px; background: var(--neon-pink); color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; text-transform: uppercase; box-shadow: 0 0 15px var(--neon-pink); font-family: inherit; }
 
         .spinner { width: 50px; height: 50px; border: 5px solid #111; border-top-color: var(--neon-blue); border-radius: 50%; animation: spin 1s linear infinite; }
 
@@ -396,7 +433,7 @@
         .pause-title { font-size: 2.5rem; font-weight: 900; color: var(--neon-blue); text-transform: uppercase; letter-spacing: 5px; text-shadow: 0 0 20px rgba(0,210,255,0.5); }
         .pause-game-name { font-size: 1rem; color: rgba(255,255,255,0.5); text-align: center; }
         .pause-actions { display: flex; flex-direction: column; gap: 14px; width: 280px; }
-        .pause-btn { padding: 14px 20px; border-radius: 14px; font-weight: 800; font-size: 0.95rem; letter-spacing: 1px; cursor: pointer; text-transform: uppercase; transition: all 0.2s ease; text-align: center; }
+        .pause-btn { padding: 14px 20px; border-radius: 14px; font-weight: 800; font-size: 0.95rem; letter-spacing: 1px; cursor: pointer; text-transform: uppercase; transition: all 0.2s ease; text-align: center; font-family: inherit; }
         .pause-btn-continue { background: linear-gradient(90deg, #00d2ff, #0066aa); color: #fff; border: none; box-shadow: 0 0 20px rgba(0,210,255,0.3); }
         .pause-btn-continue:hover { transform: translateY(-2px); box-shadow: 0 0 30px rgba(0,210,255,0.5); }
         .pause-btn-exit { background: transparent; color: rgba(255,255,255,0.6); border: 1px solid rgba(255,255,255,0.18); }
@@ -410,6 +447,167 @@
             90% { opacity: 0.3; }
             100% { opacity: 0; transform: translateY(-10vh) scale(1.5); }
         }
+
+        /* ══════════════════════════════════════════
+           PANTALLA "ESTAMOS TRABAJANDO"
+           ══════════════════════════════════════════ */
+        #proxy-screen {
+            position: fixed; inset: 0; z-index: 99998;
+            background: radial-gradient(ellipse at 50% 0%, #0a1220 0%, #050508 70%);
+            display: none; flex-direction: column;
+            align-items: center; justify-content: flex-start;
+            overflow: hidden;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+        #proxy-screen.active { display: flex; opacity: 1; }
+
+        .proxy-title {
+            margin-top: 12vh;
+            font-size: clamp(2rem, 5vw, 3.4rem);
+            font-weight: 900;
+            color: #fff;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            text-align: center;
+            text-shadow:
+                0 0 14px rgba(0,210,255,0.9),
+                0 0 34px rgba(0,210,255,0.55),
+                0 0 70px rgba(255,0,85,0.35);
+            animation: proxy-glow 2.6s ease-in-out infinite;
+            padding: 0 20px;
+        }
+        @keyframes proxy-glow {
+            0%, 100% { filter: brightness(1); }
+            50%      { filter: brightness(1.28); }
+        }
+        .proxy-subtitle {
+            margin-top: 14px;
+            font-size: 0.95rem;
+            color: rgba(255,255,255,0.5);
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            font-weight: 700;
+            text-align: center;
+            padding: 0 20px;
+        }
+
+        /* Escenario del rebote */
+        .proxy-stage {
+            position: absolute;
+            bottom: 0; left: 0; right: 0;
+            height: 46vh;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            pointer-events: none;
+        }
+
+        /* Contenedor de la animación vertical (bounce) */
+        .proxy-bouncer {
+            animation: proxy-bounce-y 4.2s infinite;
+            transform-origin: center bottom;
+            will-change: transform;
+            position: relative;
+            z-index: 2;
+        }
+
+        /* Imagen con squash & stretch */
+        .proxy-ball {
+            display: block;
+            width: 130px;
+            height: 130px;
+            object-fit: contain;
+            filter: drop-shadow(0 0 22px rgba(0,210,255,0.7));
+            transform-origin: center bottom;
+            animation: proxy-squash 4.2s infinite;
+            will-change: transform;
+        }
+
+        /* Física realista: caída acelerando, rebote desacelerando, alturas decrecientes */
+        @keyframes proxy-bounce-y {
+            0%   { transform: translateY(-62vh); animation-timing-function: cubic-bezier(0.55, 0, 1, 0.45); }
+            24%  { transform: translateY(0);     animation-timing-function: cubic-bezier(0, 0.55, 0.45, 1); }
+            40%  { transform: translateY(-32vh); animation-timing-function: cubic-bezier(0.55, 0, 1, 0.45); }
+            54%  { transform: translateY(0);     animation-timing-function: cubic-bezier(0, 0.55, 0.45, 1); }
+            67%  { transform: translateY(-16vh); animation-timing-function: cubic-bezier(0.55, 0, 1, 0.45); }
+            78%  { transform: translateY(0);     animation-timing-function: cubic-bezier(0, 0.55, 0.45, 1); }
+            87%  { transform: translateY(-7vh);  animation-timing-function: cubic-bezier(0.55, 0, 1, 0.45); }
+            93%  { transform: translateY(0);     animation-timing-function: cubic-bezier(0, 0.55, 0.45, 1); }
+            97%  { transform: translateY(-2.5vh); animation-timing-function: cubic-bezier(0.55, 0, 1, 0.45); }
+            100% { transform: translateY(0); }
+        }
+
+        /* Squash & stretch sincronizado con cada impacto */
+        @keyframes proxy-squash {
+            0%, 22%   { transform: scale(1, 1); }
+            24%       { transform: scale(1.28, 0.72); }
+            27%       { transform: scale(0.94, 1.06); }
+            31%       { transform: scale(1, 1); }
+            52%       { transform: scale(1, 1); }
+            54%       { transform: scale(1.22, 0.78); }
+            57%       { transform: scale(0.96, 1.04); }
+            61%       { transform: scale(1, 1); }
+            76%       { transform: scale(1, 1); }
+            78%       { transform: scale(1.14, 0.86); }
+            81%       { transform: scale(0.98, 1.02); }
+            84%       { transform: scale(1, 1); }
+            91%       { transform: scale(1, 1); }
+            93%       { transform: scale(1.07, 0.93); }
+            96%       { transform: scale(1, 1); }
+            100%      { transform: scale(1, 1); }
+        }
+
+        /* Sombra en el "suelo" que se encoge cuando el logo sube */
+        .proxy-shadow {
+            position: absolute;
+            bottom: 0;
+            width: 170px;
+            height: 18px;
+            border-radius: 50%;
+            background: radial-gradient(ellipse at center, rgba(0,210,255,0.55), transparent 70%);
+            filter: blur(4px);
+            animation: proxy-shadow 4.2s infinite;
+            z-index: 1;
+        }
+        @keyframes proxy-shadow {
+            0%, 24%, 54%, 78%, 93%, 100% { transform: scaleX(1);   opacity: 0.75; }
+            12%, 40%, 67%, 87%, 97%       { transform: scaleX(0.5); opacity: 0.25; }
+        }
+
+        /* Línea del suelo */
+        .proxy-floor {
+            position: absolute;
+            bottom: 8vh; left: 0; right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, rgba(0,210,255,0.55), rgba(255,0,85,0.45), transparent);
+            box-shadow: 0 0 24px rgba(0,210,255,0.55);
+            z-index: 0;
+        }
+
+        /* Botón volver */
+        #proxy-back {
+            position: fixed;
+            top: 22px; left: 22px;
+            z-index: 99999;
+            padding: 12px 22px;
+            background: rgba(5,8,16,0.9);
+            border: 2px solid rgba(0,210,255,0.5);
+            color: #fff;
+            font-family: inherit;
+            font-weight: 900;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        #proxy-back:hover {
+            border-color: var(--neon-blue);
+            box-shadow: 0 0 22px rgba(0,210,255,0.5);
+            transform: translateY(-2px);
+        }
     </style>
     <meta http-equiv="Permissions-Policy" content="camera=(self), microphone=(self)">
 </head>
@@ -417,39 +615,30 @@
 
 <div id="bubbles-bg"></div>
 
-<!-- ── BOTÓN DEL LOGO (arriba izquierda) ── -->
-<div id="menu-toggle" onclick="togglePanel()">
-    <img id="menu-toggle-logo" src="" alt="Menú">
+<!-- ── BOTÓN DEL LOGO (arriba izquierda) — significa "estás en Ultron Games" ── -->
+<div id="menu-toggle" title="Ultron Games" onclick="volverAlInicio()">
+    <img id="menu-toggle-logo" src="" alt="Ultron Games">
 </div>
 
-<!-- ── OVERLAY ── -->
-<div id="panel-overlay" onclick="cerrarPanel()"></div>
+<!-- ── BOTÓN PROXY (debajo del logo) ── -->
+<div id="proxy-toggle" title="Buscador con Proxy" onclick="mostrarProximamente()">
+    <img id="proxy-toggle-logo" src="" alt="Proxy">
+</div>
 
-<!-- ── PANEL LATERAL DE CATEGORÍAS ── -->
-<aside id="side-panel">
-    <div class="side-panel-title">Categorías</div>
-    <button class="cat-btn active" data-category="todos"><img class="cat-icon" src="https://cdn-icons-png.flaticon.com/512/2949/2949874.png" alt=""><span class="cat-label">Todos los juegos</span></button>
-    <button class="cat-btn" data-category="aventura"><img class="cat-icon" src="https://cdn-icons-png.flaticon.com/512/8193/8193154.png" alt=""><span class="cat-label">Juegos de Aventura</span></button>
-    <button class="cat-btn" data-category="supervivencia"><img class="cat-icon" src="https://images.emojiterra.com/google/android-11/512px/1f525.png" alt=""><span class="cat-label">Supervivencia</span></button>
-    <button class="cat-btn" data-category="accion"><img class="cat-icon" src="https://cdn-icons-png.flaticon.com/512/616/616500.png" alt=""><span class="cat-label">Acción</span></button>
-    <button class="cat-btn" data-category="escape"><img class="cat-icon" src="https://cdn-icons-png.flaticon.com/512/1864/1864744.png" alt=""><span class="cat-label">Escape</span></button>
-    <button class="cat-btn" data-category="misterio"><img class="cat-icon" src="https://cdn-icons-png.flaticon.com/512/751/751381.png" alt=""><span class="cat-label">Misterio</span></button>
-    <button class="cat-btn" data-category="construccion"><img class="cat-icon" src="https://cdn-icons-png.flaticon.com/512/8568/8568554.png" alt=""><span class="cat-label">Construcción</span></button>
-    <button class="cat-btn" data-category="dos_jugadores"><img class="cat-icon" src="https://cdn-icons-png.flaticon.com/512/4726/4726492.png" alt=""><span class="cat-label">2 Jugadores</span></button>
-    <button class="cat-btn" data-category="multijugador"><img class="cat-icon" src="https://cdn-icons-png.flaticon.com/512/8193/8193229.png" alt=""><span class="cat-label">Multijugador</span></button>
-    <button class="cat-btn" data-category="roblox"><img class="cat-icon" src="https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f2/Roblox_%282025%29_%28App_Icon%29.svg/500px-Roblox_%282025%29_%28App_Icon%29.svg.png?utm_source=es.wikipedia.org&utm_campaign=index&utm_content=thumbnail" alt=""><span class="cat-label">Roblox</span></button>
-    <button class="cat-btn" data-category="consola"><img class="cat-icon" src="https://img.icons8.com/fluent/1200/joystick.jpg" alt=""><span class="cat-label">Consola</span></button>
-    <button class="cat-btn" data-category="terror"><img class="cat-icon" src="https://cdn-icons-png.flaticon.com/512/12355/12355892.png" alt=""><span class="cat-label">Terror</span></button>
-    <button class="cat-btn" data-category="puzzle"><img class="cat-icon" src="https://cdn-icons-png.flaticon.com/512/7468/7468192.png" alt=""><span class="cat-label">Puzzle</span></button>
-    <button class="cat-btn" data-category="deportes"><img class="cat-icon" src="https://cdn-icons-png.flaticon.com/512/5213/5213872.png" alt=""><span class="cat-label">Deportes</span></button>
-    <button class="cat-btn" data-category="carreras"><img class="cat-icon" src="https://cdn-icons-png.flaticon.com/512/147/147216.png" alt=""><span class="cat-label">Carreras</span></button>
-    <button class="cat-btn" data-category="ritmo"><img class="cat-icon" src="https://images.emojiterra.com/google/noto-emoji/unicode-17.0/color/1024px/1f3a4.png" alt=""><span class="cat-label">Ritmo</span></button>
-    <button class="cat-btn" data-category="simulacion"><img class="cat-icon" src="https://cdn-icons-png.flaticon.com/512/4115/4115355.png" alt=""><span class="cat-label">Simulación</span></button>
-    <button class="cat-btn" data-category="sandbox"><img class="cat-icon" src="https://cdn-icons-png.flaticon.com/512/7577/7577383.png" alt=""><span class="cat-label">Sandbox</span></button>
-    <button class="cat-btn" data-category="anime"><img class="cat-icon" src="https://cdn-icons-png.flaticon.com/512/10658/10658933.png" alt=""><span class="cat-label">Anime</span></button>
-    <button class="cat-btn" data-category="shooter"><img class="cat-icon" src="https://cdn-icons-png.flaticon.com/512/5299/5299029.png" alt=""><span class="cat-label">Shooter</span></button>
-    <button class="cat-btn" data-category="ultron_search"><img class="cat-icon" src="https://cdn-icons-png.flaticon.com/512/5988/5988576.png" alt=""><span class="cat-label">Ultron Search</span></button>
-</aside>
+<!-- ── PANTALLA "ESTAMOS TRABAJANDO" ── -->
+<div id="proxy-screen">
+    <button id="proxy-back" onclick="cerrarProxyScreen()">← Volver</button>
+    <div class="proxy-title">Estamos trabajando…</div>
+    <div class="proxy-subtitle">Buscador con proxy · próximamente</div>
+
+    <div class="proxy-stage">
+        <div class="proxy-floor"></div>
+        <div class="proxy-shadow"></div>
+        <div class="proxy-bouncer">
+            <img id="proxy-ball-img" class="proxy-ball" src="" alt="Ultron">
+        </div>
+    </div>
+</div>
 
 <div id="menu-view" style="position:relative; z-index:2;">
     <header class="hero-header">
@@ -461,17 +650,41 @@
         <div class="search-wrapper">
             <div class="search-bar">
                 <span class="search-icon">⌕</span>
-                <input id="search-input" type="text" placeholder="Buscar juego...">
+                <input id="search-input" type="text" placeholder="Buscar juego en todas las categorías...">
+            </div>
+            <!-- ── CATEGORÍAS COMO BOTONES CON ICONO (solo icono, sin título) ── -->
+            <div class="category-bar" id="category-bar">
+                <button class="cat-btn active" data-category="todos" title="Todos los juegos"><img class="cat-icon" src="https://cdn-icons-png.flaticon.com/512/2949/2949874.png" alt="Todos"></button>
+                <button class="cat-btn" data-category="aventura" title="Juegos de Aventura"><img class="cat-icon" src="https://cdn-icons-png.flaticon.com/512/8193/8193154.png" alt="Aventura"></button>
+                <button class="cat-btn" data-category="supervivencia" title="Supervivencia"><img class="cat-icon" src="https://images.emojiterra.com/google/android-11/512px/1f525.png" alt="Supervivencia"></button>
+                <button class="cat-btn" data-category="accion" title="Acción"><img class="cat-icon" src="https://cdn-icons-png.flaticon.com/512/616/616500.png" alt="Acción"></button>
+                <button class="cat-btn" data-category="escape" title="Escape"><img class="cat-icon" src="https://cdn-icons-png.flaticon.com/512/1864/1864744.png" alt="Escape"></button>
+                <button class="cat-btn" data-category="misterio" title="Misterio"><img class="cat-icon" src="https://cdn-icons-png.flaticon.com/512/751/751381.png" alt="Misterio"></button>
+                <button class="cat-btn" data-category="construccion" title="Construcción"><img class="cat-icon" src="https://cdn-icons-png.flaticon.com/512/8568/8568554.png" alt="Construcción"></button>
+                <button class="cat-btn" data-category="dos_jugadores" title="2 Jugadores"><img class="cat-icon" src="https://cdn-icons-png.flaticon.com/512/4726/4726492.png" alt="2 Jugadores"></button>
+                <button class="cat-btn" data-category="multijugador" title="Multijugador"><img class="cat-icon" src="https://cdn-icons-png.flaticon.com/512/8193/8193229.png" alt="Multijugador"></button>
+                <button class="cat-btn" data-category="roblox" title="Roblox"><img class="cat-icon" src="https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f2/Roblox_%282025%29_%28App_Icon%29.svg/500px-Roblox_%282025%29_%28App_Icon%29.svg.png" alt="Roblox"></button>
+                <button class="cat-btn" data-category="consola" title="Consola"><img class="cat-icon" src="https://img.icons8.com/fluent/1200/joystick.jpg" alt="Consola"></button>
+                <button class="cat-btn" data-category="terror" title="Terror"><img class="cat-icon" src="https://cdn-icons-png.flaticon.com/512/12355/12355892.png" alt="Terror"></button>
+                <button class="cat-btn" data-category="puzzle" title="Puzzle"><img class="cat-icon" src="https://cdn-icons-png.flaticon.com/512/7468/7468192.png" alt="Puzzle"></button>
+                <button class="cat-btn" data-category="deportes" title="Deportes"><img class="cat-icon" src="https://cdn-icons-png.flaticon.com/512/5213/5213872.png" alt="Deportes"></button>
+                <button class="cat-btn" data-category="carreras" title="Carreras"><img class="cat-icon" src="https://cdn-icons-png.flaticon.com/512/147/147216.png" alt="Carreras"></button>
+                <button class="cat-btn" data-category="ritmo" title="Ritmo"><img class="cat-icon" src="https://images.emojiterra.com/google/noto-emoji/unicode-17.0/color/1024px/1f3a4.png" alt="Ritmo"></button>
+                <button class="cat-btn" data-category="simulacion" title="Simulación"><img class="cat-icon" src="https://cdn-icons-png.flaticon.com/512/4115/4115355.png" alt="Simulación"></button>
+                <button class="cat-btn" data-category="sandbox" title="Sandbox"><img class="cat-icon" src="https://cdn-icons-png.flaticon.com/512/7577/7577383.png" alt="Sandbox"></button>
+                <button class="cat-btn" data-category="anime" title="Anime"><img class="cat-icon" src="https://cdn-icons-png.flaticon.com/512/10658/10658933.png" alt="Anime"></button>
+                <button class="cat-btn" data-category="shooter" title="Shooter"><img class="cat-icon" src="https://cdn-icons-png.flaticon.com/512/5299/5299029.png" alt="Shooter"></button>
+                <button class="cat-btn" data-category="ultron_search" title="Ultron Search"><img class="cat-icon" src="https://cdn-icons-png.flaticon.com/512/5988/5988576.png" alt="Ultron Search"></button>
             </div>
         </div>
 
         <div class="sort-wrap">
             <span>Ordenar:</span>
             <select id="sort-select" class="sort-select" aria-label="Ordenar juegos">
-                <option value="popular">Más populares</option>
                 <option value="nuevo">Más nuevos</option>
-                <option value="unpopular">Menos populares</option>
+                <option value="viejo">Más antiguos</option>
                 <option value="az">A-Z</option>
+                <option value="za">Z-A</option>
             </select>
         </div>
 
@@ -524,18 +737,30 @@
     const LOGO_LOADING_URL = 'https://raw.githack.com/derekonsio1023-gif/Ultron-games/main/assets/logo.png';
     const LOGO_INTRO_URL = 'https://raw.githack.com/derekonsio1023-gif/Ultron-games/main/assets/Watermark.png';
     const INTRO_SOUND_URL = 'https://raw.githack.com/derekonsio1023-gif/Ultron-games-Spanish/main/assets/Ultron.mp3';
+    const LOGO_PROXY_URL = 'https://cdn-icons-png.flaticon.com/512/5988/5988576.png'; // cámbialo por tu logo del proxy
 
-    // Firebase (para sugerencias y contadores)
-    const _db='ultron-bd064-default-rtdb.europe-west1.firebasedatabase';
-    function _getDB(){ return `https://${_db}.app`; }
-    const _db2='ultron-bd064-default-rtdb.europe-west1.firebasedatabase';
-    function _getDB2(){ return `https://${_db2}.app`; }
+    // Firebase (solo para sugerencias)
+    const _db = 'ultron-bd064-default-rtdb.europe-west1.firebasedatabase';
+    function _getDB() { return `https://${_db}.app`; }
 
     // ══════════════════════════════════════════════════════════════
-    // SLOTS DE JUEGOS — PEGA AQUÍ TODOS TUS SLOTS
+    // SLOTS DE JUEGOS
+    // ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
+    // PEGA AQUÍ TODOS TUS SLOTS TAL CUAL LOS TIENES.
+    // Los slots NO cambian respecto a tu versión original.
+    //
+    // Para marcar un juego como NUEVO (verde neón, burbujas y primero en la lista),
+    // añade la propiedad  nuevo: true   al slot. Ejemplo:
+    //
+    //   1: { titulo: "Backrooms", img: "...", url: "...", nuevo: true,
+    //        tags: { genero: ["terror","aventura"], ambientacion: ["realista","3d"],
+    //                modo: ["un_jugador"], estilo: ["dificil","historia"],
+    //                plataforma: ["ambos"] } },
+    //
+    // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
     // ══════════════════════════════════════════════════════════════
     const CONFIG = {
-                1: { titulo: "Backrooms", img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSKKh1u918ZKxGm7x_Zul7wNIYK2soB4y2EFQ&s", url: "https://backroom-five.vercel.app/", time: 0, tags: { genero: ["terror","aventura"], ambientacion: ["realista","3d"], modo: ["un_jugador"], estilo: ["dificil","historia"], plataforma: ["ambos"] } },
+            1: { titulo: "Backrooms", img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSKKh1u918ZKxGm7x_Zul7wNIYK2soB4y2EFQ&s", url: "https://backroom-five.vercel.app/", time: 0, tags: { genero: ["terror","aventura"], ambientacion: ["realista","3d"], modo: ["un_jugador"], estilo: ["dificil","historia"], plataforma: ["ambos"] } },
         2: { titulo: "Ball Survivor", img: "", url: "https://raw.githack.com/derekonsio1023-gif/Fluffy-totus/main/Ball_Survivor.html", time: 0, tags: { genero: ["accion","sandbox"], ambientacion: ["3d"], modo: ["un_jugador"], estilo: ["infinito","rapido"], plataforma: ["movil"] } },
         3: { titulo: "Build Now GG", img: "https://play-lh.googleusercontent.com/Jkx-IPLeRDk4uKeDyIMWKQ6jv9RquAC0WErGzWIMZQK7Z8FKzsqbUtC0J7vTm24xIqnme3TZR-6a8WAj6EXP_DA", url: "https://raw.githack.com/zynq-platform/buildnow-gg/refs/heads/main/index.html", time: 0, tags: { genero: ["accion","sandbox"], ambientacion: ["moderno","3d"], modo: ["multijugador","online"], estilo: ["rapido","infinito"], plataforma: ["pc"] } },
         4: { titulo: "Among Us", img: "https://static.wikia.nocookie.net/among-us-wiki/images/8/84/Among_Us.png/revision/latest?cb=20240408020746", url: "https://raw.githack.com/BreadEpic/Among-Us/refs/heads/main/index.html", time: 0, tags: { genero: ["accion","estrategia"], ambientacion: ["scifi","3d"], modo: ["multijugador","online","coop"], estilo: ["rapido"], plataforma: ["ambos"] } },
@@ -1569,26 +1794,26 @@
 1033: { titulo: "blow-king-game", img: "https://www1.minijuegosgratis.com/v3/games/thumbnails/240962_7_sq.jpg", url: "https://raw.githack.com/ahrdevelopers/blow-king-game/refs/heads/main/index.html", tags: { genero: ["casual"], ambientacion: ["2d"], modo: ["un_jugador"], estilo: ["variado"], plataforma: ["movil"] } },
 1034: { titulo: "bloxd-io", img: "https://store-images.s-microsoft.com/image/apps.1341.14525867990573942.1097e7b3-d236-4b06-b0fc-73f5b2ad5f74.c8dfb2ef-9e0b-491a-8616-a9503797c213", url: "https://raw.githack.com/ahrdevelopers/bloxd-io/refs/heads/main/index.html", tags: { genero: ["aventura"], ambientacion: ["3d"], modo: ["multijugador"], estilo: ["sandbox"], plataforma: ["movil"] } },
 1035: { titulo: "bloxors", img: "", url: "https://raw.githack.com/ahrdevelopers/bloxors/refs/heads/main/index.html", tags: { genero: ["puzzle"], ambientacion: ["2d"], modo: ["un_jugador"], estilo: ["logico"], plataforma: ["movil"] } },
-1036: { titulo: "bloxorz", img: "", url: "https://raw.githack.com/ahrdevelopers/bloxorz/refs/heads/main/index.html", tags: { genero: ["puzzle"], ambientacion: ["2d"], modo: ["un_jugador"], estilo: ["logico"], plataforma: ["movil"] } },
+1036: { titulo: "Gang Beasts Offline", img: "https://pbs.twimg.com/ext_tw_video_thumb/1591115384974987267/pu/img/m2VUAcg9gXd_peb4?format=webp&name=large", url: "https://raw.githack.com/derekonsio1023-gif/Ultron-games-Spanish/refs/heads/main/Games/Gang%20Beasts/index.html", tags: { genero: ["puzzle"], ambientacion: ["2d"], modo: ["un_jugador"], estilo: ["logico"], plataforma: ["movil"] } },
+1036: { titulo: "How to Fish Online", img: "https://sm.ign.com/ign_fr/cover/h/how-to-fis/how-to-fish_p7kn.jpg", url: "https://raw.githack.com/derekonsio1023-gif/Ultron-games-Spanish/refs/heads/main/Games/How%20to%20fish/index.html", tags: { genero: ["puzzle"], ambientacion: ["2d"], modo: ["un_jugador"], estilo: ["logico"], plataforma: ["movil"] } },
     };
 
     // ══════════════════════════════════════════════════════════════
     // LÓGICA — NO TOCAR
     // ══════════════════════════════════════════════════════════════
     const JUEGOS_POR_PAGINA = 300;
-    const STORAGE_KEY = 'ultron_play_counts_v3';
-    let currentSort = 'popular';
+    let currentSort = 'nuevo';
     let currentCategory = 'todos';
     let currentPage = 1;
-    let playCountsCache = {};
-    let lastPlayedSlot = null;
-    let lastPlayedAt = null;
-    let currentGameData = null;
-    let isGameRunning = false;
-    let introAudioEl = null;
     let currentLang = 'es';
+    let searchQuery = '';           // 👈 búsqueda global
+    let introAudioEl = null;
+    let isGameRunning = false;
+    let currentGameData = null;
 
     // ── CATEGORÍAS ──
+    // Cada categoría tiene `match(g)` que decide si un juego pertenece a ella,
+    // revisando sus `tags`. Un juego pertenece si la función devuelve true.
     const CATEGORIAS = {
         aventura:      { label: 'Juegos de Aventura', match: g => g.tags?.genero?.includes('aventura') },
         supervivencia: { label: 'Supervivencia',        match: g => g.tags?.genero?.includes('terror') || g.tags?.estilo?.includes('supervivencia') },
@@ -1613,82 +1838,106 @@
         todos:         { label: 'Todos los juegos',     match: () => true }
     };
 
-    // ── STORAGE ──
-    function getStorage() { try { const t="__ultron_test__"; localStorage.setItem(t,"1"); localStorage.removeItem(t); return localStorage; } catch(e) { return null; } }
-    const storage = getStorage();
-    function cargarContadoresLocales() { if(!storage) return {}; try { const r=storage.getItem(STORAGE_KEY); return r?JSON.parse(r):{}; } catch(e){ return {}; } }
-    function guardarContadoresLocales(d) { if(!storage) return; try { storage.setItem(STORAGE_KEY,JSON.stringify(d)); } catch(e){} }
-
-    // ── CONTADORES ──
-    function remoteKey(slot){ return `slot-${slot}`; }
-    function getGameCount(g,slot){ return Number(playCountsCache[remoteKey(slot)]||0); }
-    async function cargarContadoresGlobales(){
-        playCountsCache={...cargarContadoresLocales()};
-        try {
-            const res=await fetch(`${_getDB2()}/contadores.json`);
-            if(!res.ok) return;
-            const data=await res.json();
-            if(!data) return;
-            Object.entries(data).forEach(([key,val])=>{ playCountsCache[key]=Number(val)||0; });
-            guardarContadoresLocales(playCountsCache);
-        } catch(e){}
-    }
-    async function incrementarContador(game,slot){
-        const key=remoteKey(slot);
-        playCountsCache[key]=Number(playCountsCache[key]||0)+1;
-        guardarContadoresLocales(playCountsCache);
-        try {
-            const res=await fetch(`${_getDB2()}/contadores/${key}.json`);
-            const current=res.ok?(Number(await res.json())||0):0;
-            const nuevo=current+1;
-            await fetch(`${_getDB2()}/contadores/${key}.json`,{ method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(nuevo) });
-            playCountsCache[key]=nuevo;
-            guardarContadoresLocales(playCountsCache);
-        } catch(e){}
-    }
-
-    // ── PANEL ──
-    function togglePanel() {
-        document.getElementById('side-panel').classList.toggle('open');
-        document.getElementById('panel-overlay').classList.toggle('active');
-    }
-    function cerrarPanel() {
-        document.getElementById('side-panel').classList.remove('open');
-        document.getElementById('panel-overlay').classList.remove('active');
-    }
-
-    // ── FILTRADO ──
+    // ── FILTRADO Y ORDEN (con búsqueda global) ──
     function getFilteredEntries() {
         const cat = CATEGORIAS[currentCategory] || CATEGORIAS.todos;
+        const q = searchQuery.trim().toLowerCase();
         const entries = [];
         for (const [slotStr, game] of Object.entries(CONFIG)) {
             if (!game || !game.url) continue;
             const slot = Number(slotStr);
             if (!cat.match(game)) continue;
-            entries.push({ slot, game, titulo: game.titulo || 'Próximamente', count: getGameCount(game, slot) });
+            const titulo = game.titulo || 'Próximamente';
+            // 🔍 Búsqueda GLOBAL: si hay query, se aplica a TODOS los juegos de todas las páginas
+            if (q && !titulo.toLowerCase().includes(q)) continue;
+            entries.push({
+                slot,
+                game,
+                titulo,
+                nuevo: game.nuevo === true
+            });
         }
+        // Los nuevos (con `nuevo: true`) siempre van primero
+        const nuevos = entries.filter(e => e.nuevo).sort((a, b) => b.slot - a.slot);
+        const viejos = entries.filter(e => !e.nuevo);
+
         switch (currentSort) {
-            case 'popular':   entries.sort((a,b) => (b.count - a.count) || a.titulo.localeCompare(b.titulo,'es')); break;
-            case 'unpopular': entries.sort((a,b) => (a.count - b.count) || a.titulo.localeCompare(b.titulo,'es')); break;
-            case 'nuevo':     entries.sort((a,b) => b.slot - a.slot); break;
-            case 'az':        entries.sort((a,b) => a.titulo.localeCompare(b.titulo,'es')); break;
+            case 'nuevo':  viejos.sort((a, b) => b.slot - a.slot); break;
+            case 'viejo':  viejos.sort((a, b) => a.slot - b.slot); break;
+            case 'az':     viejos.sort((a, b) => a.titulo.localeCompare(b.titulo, 'es')); break;
+            case 'za':     viejos.sort((a, b) => b.titulo.localeCompare(a.titulo, 'es')); break;
         }
-        return entries;
+        return [...nuevos, ...viejos];
     }
 
     // ── CARD ──
     function crearCard(slot, game) {
         const card = document.createElement('div');
-        card.className = 'card';
+        const esNuevo = game && game.nuevo === true;
+        card.className = 'card' + (esNuevo ? ' nuevo' : '');
         card.dataset.title = (game ? game.titulo : 'Próximamente').toLowerCase();
         card.dataset.slot = String(slot);
+
         const tieneImagen = game && game.img && game.img !== '';
         const bgStyle = tieneImagen ? `background-image: url('${game.img}')` : '';
         const titulo = game ? game.titulo : 'Próximamente';
-        const cuenta = game ? getGameCount(game, slot) : 0;
-        card.innerHTML = `<div class="card-thumb" style="${bgStyle}">${tieneImagen?'':'<span class="empty-icon">?</span>'}</div><div class="card-footer"><div class="card-title">${titulo}</div><div class="card-meta"><div class="card-popularity">👥 ${cuenta}</div></div></div>`;
+
+        card.innerHTML = `
+            ${esNuevo ? '<span class="card-badge-nuevo">NUEVO</span>' : ''}
+            <div class="card-thumb" style="${bgStyle}">${tieneImagen ? '' : '<span class="empty-icon">?</span>'}</div>
+            <div class="card-footer"><div class="card-title">${titulo}</div></div>
+        `;
+
+        if (esNuevo) {
+            for (let i = 0; i < 9; i++) {
+                const b = document.createElement('span');
+                b.className = 'nuevo-bubble';
+                const size = 3 + Math.random() * 7;
+                b.style.left = (Math.random() * 100) + '%';
+                b.style.width = size + 'px';
+                b.style.height = size + 'px';
+                b.style.animationDelay = (Math.random() * 3.5) + 's';
+                b.style.animationDuration = (2.5 + Math.random() * 2.5) + 's';
+                card.appendChild(b);
+            }
+        }
+
         if (game && game.url) card.onclick = () => lanzarJuego(game, slot);
         return card;
+    }
+
+    // ── CARD RANDOM (primer slot, con fondo de img aleatoria) ──
+    function crearCardRandom() {
+        // Recolectamos todas las imágenes no vacías de todos los juegos
+        const imgs = Object.values(CONFIG)
+            .filter(g => g && g.img && g.img !== '')
+            .map(g => g.img);
+        const bgUrl = imgs.length ? imgs[Math.floor(Math.random() * imgs.length)] : '';
+
+        const card = document.createElement('div');
+        card.className = 'card card-random';
+        card.dataset.title = 'random';
+
+        const bgStyle = bgUrl ? `background-image:url('${bgUrl}');` : '';
+
+        card.innerHTML = `
+            <div class="card-thumb" style="${bgStyle} background-size:cover; background-position:center; display:flex; align-items:center; justify-content:center; position:relative;">
+                <div style="position:absolute; inset:0; background: linear-gradient(135deg, rgba(0,210,255,0.55), rgba(255,0,85,0.4)); backdrop-filter: blur(2px);"></div>
+                <span style="font-size:5rem; filter: drop-shadow(0 0 18px rgba(0,0,0,0.85)); position:relative; z-index:1;">🎲</span>
+            </div>
+            <div class="card-footer">
+                <div class="card-title" style="color:#7df9ff; text-shadow: 0 0 10px rgba(0,210,255,0.7);">Random</div>
+            </div>
+        `;
+        card.onclick = () => lanzarJuegoRandom();
+        return card;
+    }
+
+    function lanzarJuegoRandom() {
+        const entries = getFilteredEntries();
+        if (!entries.length) return;
+        const item = entries[Math.floor(Math.random() * entries.length)];
+        lanzarJuego(item.game, item.slot);
     }
 
     // ── RENDER ──
@@ -1704,17 +1953,28 @@
         const end = start + JUEGOS_POR_PAGINA;
         const pageEntries = entries.slice(start, end);
 
-        title.textContent = `${CATEGORIAS[currentCategory].label} (${entries.length})`;
+        // Título con indicador de búsqueda activa
+        const q = searchQuery.trim();
+        if (q) {
+            title.textContent = `Resultados para "${q}" (${entries.length})`;
+        } else {
+            title.textContent = `${CATEGORIAS[currentCategory].label} (${entries.length})`;
+        }
 
         grid.innerHTML = '';
+        // El primer slot "Random" solo se muestra si NO hay búsqueda activa
+        if (!q) grid.appendChild(crearCardRandom());
+
         if (pageEntries.length === 0) {
-            grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:60px 20px; color:rgba(255,255,255,0.4); font-weight:700;">No hay juegos en esta categoría todavía.</div>';
+            const empty = document.createElement('div');
+            empty.style.cssText = 'grid-column:1/-1; text-align:center; padding:60px 20px; color:rgba(255,255,255,0.4); font-weight:700;';
+            empty.textContent = q ? 'No se encontraron juegos con ese nombre.' : 'No hay juegos en esta categoría todavía.';
+            grid.appendChild(empty);
         } else {
             for (const item of pageEntries) grid.appendChild(crearCard(item.slot, item.game));
         }
 
         renderPaginacion(totalPages, entries.length);
-        actualizarBusqueda();
     }
 
     // ── PAGINACIÓN ──
@@ -1723,12 +1983,12 @@
         cont.innerHTML = '';
         if (totalPages <= 1) return;
 
-        const crearBtn = (txt, page, disabled=false, active=false) => {
+        const crearBtn = (txt, page, disabled = false, active = false) => {
             const b = document.createElement('button');
             b.className = 'page-btn' + (active ? ' active' : '');
             b.textContent = txt;
             b.disabled = disabled;
-            if (!disabled && !active) b.onclick = () => { currentPage = page; renderMenu(); window.scrollTo({top:0, behavior:'smooth'}); };
+            if (!disabled && !active) b.onclick = () => { currentPage = page; renderMenu(); window.scrollTo({ top: 0, behavior: 'smooth' }); };
             return b;
         };
 
@@ -1740,11 +2000,11 @@
         let end = Math.min(totalPages, currentPage + rango);
         if (start > 1) {
             cont.appendChild(crearBtn('1', 1, false, currentPage === 1));
-            if (start > 2) cont.appendChild(Object.assign(document.createElement('span'), {className:'page-info', textContent:'...'}));
+            if (start > 2) cont.appendChild(Object.assign(document.createElement('span'), { className: 'page-info', textContent: '...' }));
         }
         for (let i = start; i <= end; i++) cont.appendChild(crearBtn(String(i), i, false, i === currentPage));
         if (end < totalPages) {
-            if (end < totalPages - 1) cont.appendChild(Object.assign(document.createElement('span'), {className:'page-info', textContent:'...'}));
+            if (end < totalPages - 1) cont.appendChild(Object.assign(document.createElement('span'), { className: 'page-info', textContent: '...' }));
             cont.appendChild(crearBtn(String(totalPages), totalPages, false, currentPage === totalPages));
         }
 
@@ -1757,44 +2017,15 @@
         cont.appendChild(info);
     }
 
-    // ── BÚSQUEDA ──
-    function actualizarBusqueda() {
-        const input = document.getElementById('search-input');
-        const query = (input?.value || '').trim().toLowerCase();
-        const cards = document.querySelectorAll('#main-grid .card');
-        cards.forEach(card => {
-            const titulo = card.dataset.title || '';
-            const coincide = !query || titulo.includes(query);
-            card.classList.toggle('hidden', !coincide);
-        });
-    }
-
     // ── INTRO ──
-    function reproducirIntroCinematica(onComplete) {
-        const intro = document.getElementById('intro-transition');
-        const img = document.getElementById('intro-logo-img');
-        img.src = LOGO_INTRO_URL;
-        intro.classList.remove('active');
-        void intro.offsetWidth;
-        intro.classList.add('active');
-        try {
-            if (!introAudioEl) { introAudioEl = new Audio(INTRO_SOUND_URL); introAudioEl.preload='auto'; introAudioEl.volume=0.9; }
-            introAudioEl.currentTime = 0;
-            const p = introAudioEl.play();
-            if (p && p.catch) p.catch(()=>{});
-        } catch(e){}
-        setTimeout(() => {
-            intro.classList.remove('active');
-            if (typeof onComplete === 'function') onComplete();
-        }, 5000);
-    }
+function reproducirIntroCinematica(onComplete) {
+    // 🚫 INTRO DESACTIVADA — pasa directo al juego
+    if (typeof onComplete === 'function') onComplete();
+    return;
+}
 
     // ── LANZAR JUEGO ──
     async function lanzarJuego(game, slot) {
-        await incrementarContador(game, slot);
-        lastPlayedSlot = Number(slot);
-        lastPlayedAt = new Date().toISOString();
-
         const menu = document.getElementById('menu-view');
         const loader = document.getElementById('loading-screen');
         const runtime = document.getElementById('game-runtime');
@@ -1807,8 +2038,6 @@
         runtime.style.display = 'none';
         isGameRunning = false;
         currentGameData = game;
-
-        try { localStorage.setItem('ultron_last_game', JSON.stringify(game)); } catch(e){}
 
         frame.onload = null;
         frame.src = 'about:blank';
@@ -1829,7 +2058,7 @@
             if (!loaded && elapsed > hardTimeoutMs) finishLoading(true);
         }, 80);
 
-        const finishLoading = (force=false) => {
+        const finishLoading = (force = false) => {
             if (loaded && !force) return;
             loaded = true;
             clearInterval(interval);
@@ -1841,7 +2070,7 @@
                     runtime.style.display = 'block';
                     isGameRunning = true;
                     if (game.pointerLock) {
-                        runtime.addEventListener('click', () => { try { frame.contentDocument?.body?.requestPointerLock?.(); } catch(e){} });
+                        runtime.addEventListener('click', () => { try { frame.contentDocument?.body?.requestPointerLock?.(); } catch (e) {} });
                         document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && document.pointerLockElement) document.exitPointerLock?.(); });
                     }
                 });
@@ -1870,26 +2099,44 @@
     }
     function continuarJuego() { document.getElementById('pause-menu').classList.remove('active'); }
 
-    // ── SUGERENCIAS ──
-    function escapeHTML(str){ return (str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-
-    async function cargarSugerenciasFirebase(){
-        try {
-            const res = await fetch(`${_getDB()}/sugerencias.json`);
-            if(!res.ok) return [];
-            const data = await res.json();
-            if(!data) return [];
-            return Object.values(data)
-                .filter(s => !s.lang || s.lang === currentLang)
-                .sort((a,b) => (b.time > a.time ? 1 : -1))
-                .slice(0, 50);
-        } catch(e){ return []; }
+    // ── BOTÓN LOGO (Ultron Games) ──
+    function volverAlInicio() {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    async function guardarSugerenciaFirebase(text){
+    // ── BOTÓN PROXY ──
+    function mostrarProximamente() {
+        const screen = document.getElementById('proxy-screen');
+        const img = document.getElementById('proxy-ball-img');
+        if (img && !img.getAttribute('src')) img.src = LOGO_LOADING_URL;
+        if (screen) screen.classList.add('active');
+    }
+
+    function cerrarProxyScreen() {
+        const screen = document.getElementById('proxy-screen');
+        if (screen) screen.classList.remove('active');
+    }
+
+    // ── SUGERENCIAS ──
+    function escapeHTML(str) { return (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+
+    async function cargarSugerenciasFirebase() {
+        try {
+            const res = await fetch(`${_getDB()}/sugerencias.json`);
+            if (!res.ok) return [];
+            const data = await res.json();
+            if (!data) return [];
+            return Object.values(data)
+                .filter(s => !s.lang || s.lang === currentLang)
+                .sort((a, b) => (b.time > a.time ? 1 : -1))
+                .slice(0, 50);
+        } catch (e) { return []; }
+    }
+
+    async function guardarSugerenciaFirebase(text) {
         try {
             const now = new Date();
-            const timeStr = now.toLocaleDateString('es-ES', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' });
+            const timeStr = now.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
             const item = { text, time: now.toISOString(), timeStr, lang: currentLang };
             const res = await fetch(`${_getDB()}/sugerencias.json`, {
                 method: 'POST',
@@ -1897,46 +2144,47 @@
                 body: JSON.stringify(item)
             });
             return res.ok;
-        } catch(e){ return false; }
+        } catch (e) { return false; }
     }
 
-    async function renderSugerencias(){
+    async function renderSugerencias() {
         const container = document.getElementById('suggestions-list');
-        if(!container) return;
+        if (!container) return;
         container.innerHTML = `<div class="suggestions-empty" style="opacity:0.5">⏳ Cargando...</div>`;
         const list = await cargarSugerenciasFirebase();
-        if(!list.length){
+        if (!list.length) {
             container.innerHTML = `<div class="suggestions-empty">Aún no hay sugerencias. ¡Sé el primero!</div>`;
             return;
         }
         container.innerHTML = list.map(s => {
-            const initials = (s.text||'?').charAt(0).toUpperCase();
+            const initials = (s.text || '?').charAt(0).toUpperCase();
             const timeLabel = s.timeStr || s.time || '';
             return `<div class="suggestion-item"><div class="suggestion-avatar">${initials}</div><div class="suggestion-text">${escapeHTML(s.text)}</div><div class="suggestion-time">${timeLabel}</div></div>`;
         }).join('');
     }
 
-    async function enviarSugerencia(){
+    async function enviarSugerencia() {
         const input = document.getElementById('suggestion-input');
         const btn = document.getElementById('suggestion-send-btn');
         const text = (input?.value || '').trim();
-        if(!text) return;
-        if(btn){ btn.disabled = true; btn.style.opacity = '0.5'; }
+        if (!text) return;
+        if (btn) { btn.disabled = true; btn.style.opacity = '0.5'; }
         const ok = await guardarSugerenciaFirebase(text);
-        if(ok){
+        if (ok) {
             input.value = '';
             await renderSugerencias();
         } else {
             alert('No se pudo enviar la sugerencia. Inténtalo de nuevo.');
         }
-        if(btn){ btn.disabled = false; btn.style.opacity = '1'; }
+        if (btn) { btn.disabled = false; btn.style.opacity = '1'; }
     }
 
     // ── INIT ──
     async function initUltron() {
-        // Logos
         const logoBtn = document.getElementById('menu-toggle-logo');
         if (logoBtn) logoBtn.src = LOGO_MENU_URL;
+        const proxyLogo = document.getElementById('proxy-toggle-logo');
+        if (proxyLogo) proxyLogo.src = LOGO_PROXY_URL;
         const logoImg = document.getElementById('ultron-logo');
         if (logoImg) logoImg.src = LOGO_HEADER_URL;
         const loadingLogo = document.getElementById('loading-logo');
@@ -1944,28 +2192,38 @@
 
         initBubbles();
 
-        // Orden
         const sortSelect = document.getElementById('sort-select');
         if (sortSelect) {
             sortSelect.value = currentSort;
             sortSelect.addEventListener('change', () => { currentSort = sortSelect.value; currentPage = 1; renderMenu(); });
         }
 
-        // Búsqueda
+        // 🔍 Búsqueda GLOBAL: filtra entre TODAS las páginas y re-pagina
         const input = document.getElementById('search-input');
         if (input) {
-            input.addEventListener('input', actualizarBusqueda);
-            input.addEventListener('keydown', (e) => { if (e.key === 'Escape') { input.value=''; actualizarBusqueda(); input.blur(); } });
+            input.addEventListener('input', () => {
+                searchQuery = input.value || '';
+                currentPage = 1;
+                renderMenu();
+            });
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    input.value = '';
+                    searchQuery = '';
+                    currentPage = 1;
+                    renderMenu();
+                    input.blur();
+                }
+            });
         }
 
-        // Categorías
-        document.querySelectorAll('.cat-btn').forEach(btn => {
+        // Categorías (barra horizontal)
+        document.querySelectorAll('#category-bar .cat-btn').forEach(btn => {
             btn.addEventListener('click', () => {
-                document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('#category-bar .cat-btn').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
                 currentCategory = btn.dataset.category;
                 currentPage = 1;
-                cerrarPanel();
                 renderMenu();
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             });
@@ -1975,8 +2233,11 @@
         const sugInput = document.getElementById('suggestion-input');
         if (sugInput) sugInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') enviarSugerencia(); });
 
-        // Cargar datos
-        await cargarContadoresGlobales();
+        // Escape cierra la pantalla proxy
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') cerrarProxyScreen();
+        });
+
         renderMenu();
         renderSugerencias();
     }
@@ -1988,7 +2249,7 @@
         for (let i = 0; i < 60; i++) {
             const p = document.createElement('div');
             p.className = 'bg-particle';
-            p.style.cssText = `left:${Math.random()*100}%; width:${Math.random()*3+1}px; height:${Math.random()*3+1}px; animation-duration:${Math.random()*8+6}s; animation-delay:${Math.random()*8}s; opacity:0;`;
+            p.style.cssText = `left:${Math.random() * 100}%; width:${Math.random() * 3 + 1}px; height:${Math.random() * 3 + 1}px; animation-duration:${Math.random() * 8 + 6}s; animation-delay:${Math.random() * 8}s; opacity:0;`;
             c.appendChild(p);
         }
     }
