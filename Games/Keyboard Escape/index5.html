@@ -260,7 +260,7 @@
                 StartUnityInstance();
         }
 
-        function IsLocalHost() {
+function IsLocalHost() {
     try {
         if (window.top !== window) return false;
 
@@ -276,13 +276,9 @@
             host.includes("netlify") ||
             host.includes("vercel") ||
             host.includes("pages.dev") ||
-            host.includes("cloudflare")) {
+            host.includes("cloudflare") ||
+            host.includes("raw.githubusercontent")) {
             LogStyledMessage("Dev Host: " + host);
-            return true;
-        }
-
-        // raw.githubusercontent.com, etc.
-        if (host.includes("raw.githubusercontent")) {
             return true;
         }
     } catch (error) {
@@ -291,18 +287,6 @@
     }
     return false;
 }
-
-                const host = window.location.hostname;
-                if (host === "localhost" || host === "127.0.0.1" || host.endsWith(".local")) {
-                    LogStyledMessage("Local Host");
-                    return true;
-                }
-            } 
-            catch (error) {
-                console.error("Error checking the local host:", error);
-                return false;
-            }
-        }
 
         function YG2Instance(method) {
             if (ygGameInstance == null)
