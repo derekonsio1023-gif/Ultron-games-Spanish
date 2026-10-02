@@ -9,7 +9,39 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
 <link rel="stylesheet" href="./style.css"/>
 <!-- Yandex Games SDK -->
-<script src="./sdk.js"></script>
+<script>
+  // Solo cargar el SDK de Yandex cuando estemos dentro del iframe de Yandex Games
+  (function() {
+    var inYandex = false;
+    try {
+      // El SDK de Yandex solo funciona si estamos en un iframe
+      if (window.top !== window) {
+        var ref = document.referrer || '';
+        var host = location.hostname || '';
+        // Yandex Games usa dominios yandex.* y sus CDNs
+        if (ref.includes('yandex') ||
+            ref.includes('yango') ||
+            host.includes('yandex') ||
+            host.includes('yango') ||
+            host.includes('games.yango')) {
+          inYandex = true;
+        }
+      }
+    } catch (e) {
+      // Si hay error (por ejemplo, cross-origin), asumimos que NO estamos en Yandex
+      inYandex = false;
+    }
+
+    if (inYandex) {
+      var s = document.createElement('script');
+      s.src = '/sdk.js';
+      document.head.appendChild(s);
+      console.log('[SDK] Cargando sdk.js de Yandex');
+    } else {
+      console.log('[SDK] Fuera de Yandex Games — sdk.js NO se carga');
+    }
+  })();
+</script>
 <style>
         canvas:focus {
             outline: none;
@@ -229,10 +261,36 @@
         }
 
         function IsLocalHost() {
-            try {
-                if (window.top !== window) {
-                    return false;
-                }
+    try {
+        if (window.top !== window) return false;
+
+        const host = window.location.hostname;
+
+        // Hostings de desarrollo / pruebas
+        if (host === "localhost" ||
+            host === "127.0.0.1" ||
+            host.endsWith(".local") ||
+            host.includes("githack") ||
+            host.includes("github") ||
+            host.includes("gitlab") ||
+            host.includes("netlify") ||
+            host.includes("vercel") ||
+            host.includes("pages.dev") ||
+            host.includes("cloudflare")) {
+            LogStyledMessage("Dev Host: " + host);
+            return true;
+        }
+
+        // raw.githubusercontent.com, etc.
+        if (host.includes("raw.githubusercontent")) {
+            return true;
+        }
+    } catch (error) {
+        console.error("Error checking the local host:", error);
+        return false;
+    }
+    return false;
+}
 
                 const host = window.location.hostname;
                 if (host === "localhost" || host === "127.0.0.1" || host.endsWith(".local")) {
@@ -279,13 +337,26 @@
             console.log('%c' + message, style);
         }
 
-        async function InitYSDK() {
-            try {
-                if (IsLocalHost()) return;
+async function InitYSDK() {
+    try {
+        if (IsLocalHost()) return;
 
-                ysdk = await YaGames.init();
-                ysdk.on('game_api_pause', PauseCallback);
-                ysdk.on('game_api_resume', ResumeCallback);
+        // Guarda de seguridad: si el SDK no se cargó, no intentar inicializar
+        if (typeof YaGames === "undefined") {
+            LogStyledMessage("YaGames no disponible — SDK no cargado (fuera de Yandex Games)");
+            return;
+        }
+
+        ysdk = await YaGames.init();
+        // ... resto del código
+
+    } catch (e) {
+        console.error('CRASH Initialization SDK: ', e);
+    }
+
+    if (!IsLocalHost() && !syncInit)
+        StartUnityInstance_IfUnloaded();
+}
 
                 // Additional init0 modules
 await RequestingEnvironmentData();
