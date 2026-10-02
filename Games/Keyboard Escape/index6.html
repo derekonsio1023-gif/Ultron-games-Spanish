@@ -323,16 +323,45 @@ function IsLocalHost() {
 
 async function InitYSDK() {
     try {
-        if (IsLocalHost()) return;
+        if (IsLocalHost()) {
+            LogStyledMessage("Saltando InitYSDK — entorno de pruebas");
+            return;                                  // ← esto ya sale
+        }
 
-        // Guarda de seguridad: si el SDK no se cargó, no intentar inicializar
         if (typeof YaGames === "undefined") {
-            LogStyledMessage("YaGames no disponible — SDK no cargado (fuera de Yandex Games)");
+            LogStyledMessage("YaGames no disponible");
             return;
         }
 
         ysdk = await YaGames.init();
-        // ... resto del código
+        ysdk.on('game_api_pause', PauseCallback);
+        ysdk.on('game_api_resume', ResumeCallback);
+
+        // ↓↓↓ TODO ESTO DEBE ESTAR DENTRO DEL TRY ↓↓↓
+        await RequestingEnvironmentData();
+        LogStyledMessage('Init EnvirData ysdk');
+
+        await InitPlayer();
+        LogStyledMessage('Init Authorization ysdk');
+
+        await LoadCloud();
+        LogStyledMessage('Init Storage ysdk');
+
+        await InitPayments();
+        LogStyledMessage('Init Payments ysdk');
+
+        await GetAllGames();
+        LogStyledMessage('Init OpenURL ysdk');
+
+        await GetFlags();
+        LogStyledMessage('Init Flags ysdk');
+        // ↑↑↑ TODO ESTO DEBE ESTAR DENTRO DEL TRY ↑↑↑
+
+        initYSDK = true;
+        if (ygGameInstance != null)
+            ygGameInstance.SendMessage('YG2Instance', 'InitSDKComplete');
+
+        LogStyledMessage('Init YandexSDK Success');
 
     } catch (e) {
         console.error('CRASH Initialization SDK: ', e);
@@ -340,47 +369,7 @@ async function InitYSDK() {
 
     if (!IsLocalHost() && !syncInit)
         StartUnityInstance_IfUnloaded();
-}
-
-                // Additional init0 modules
-await RequestingEnvironmentData();
-LogStyledMessage('Init EnvirData ysdk');
-
-
-                // Additional init1 modules
-
-                // Additional init2 modules
-await InitPlayer();
-LogStyledMessage('Init Authorization ysdk');
-
-
-                // Additional init modules
-await LoadCloud();
-LogStyledMessage('Init Storage ysdk');
-
-await InitPayments();
-LogStyledMessage('Init Payments ysdk');
-
-await GetAllGames();
-LogStyledMessage('Init OpenURL ysdk');
-
-await GetFlags();
-LogStyledMessage('Init Flags ysdk');
-
-
-                initYSDK = true;
-                if (ygGameInstance != null)
-                    ygGameInstance.SendMessage('YG2Instance', 'InitSDKComplete');
-
-                LogStyledMessage('Init YandexSDK Success');
-
-            } catch (e) {
-                console.error('CRASH Initialization SDK: ', e);
-            }
-
-            if (!IsLocalHost() && !syncInit)
-                StartUnityInstance_IfUnloaded();
-        }
+}   // ← única llave de cierre de InitYSDK
 
         function InitGame() {
             initGame = true;
