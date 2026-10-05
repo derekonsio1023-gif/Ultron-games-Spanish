@@ -211,7 +211,7 @@
         #search-input { width: 100%; border: none; outline: none; background: transparent; color: white; font-size: 0.95rem; font-weight: 600; letter-spacing: 0.3px; font-family: inherit; }
         #search-input::placeholder { color: rgba(255,255,255,0.35); font-weight: 500; }
 
-        /* ── BARRA DE CATEGORÍAS HORIZONTAL (más grande) ── */
+        /* ── BARRA DE CATEGORÍAS HORIZONTAL ── */
         .category-bar {
             display: flex; flex-wrap: wrap; gap: 10px;
             justify-content: center;
@@ -492,7 +492,6 @@
             padding: 0 20px;
         }
 
-        /* Escenario del rebote */
         .proxy-stage {
             position: absolute;
             bottom: 0; left: 0; right: 0;
@@ -503,7 +502,6 @@
             pointer-events: none;
         }
 
-        /* Contenedor de la animación vertical (bounce) */
         .proxy-bouncer {
             animation: proxy-bounce-y 4.2s infinite;
             transform-origin: center bottom;
@@ -512,7 +510,6 @@
             z-index: 2;
         }
 
-        /* Imagen con squash & stretch */
         .proxy-ball {
             display: block;
             width: 130px;
@@ -524,7 +521,6 @@
             will-change: transform;
         }
 
-        /* Física realista: caída acelerando, rebote desacelerando, alturas decrecientes */
         @keyframes proxy-bounce-y {
             0%   { transform: translateY(-62vh); animation-timing-function: cubic-bezier(0.55, 0, 1, 0.45); }
             24%  { transform: translateY(0);     animation-timing-function: cubic-bezier(0, 0.55, 0.45, 1); }
@@ -538,7 +534,6 @@
             100% { transform: translateY(0); }
         }
 
-        /* Squash & stretch sincronizado con cada impacto */
         @keyframes proxy-squash {
             0%, 22%   { transform: scale(1, 1); }
             24%       { transform: scale(1.28, 0.72); }
@@ -558,7 +553,6 @@
             100%      { transform: scale(1, 1); }
         }
 
-        /* Sombra en el "suelo" que se encoge cuando el logo sube */
         .proxy-shadow {
             position: absolute;
             bottom: 0;
@@ -575,7 +569,6 @@
             12%, 40%, 67%, 87%, 97%       { transform: scaleX(0.5); opacity: 0.25; }
         }
 
-        /* Línea del suelo */
         .proxy-floor {
             position: absolute;
             bottom: 8vh; left: 0; right: 0;
@@ -585,7 +578,6 @@
             z-index: 0;
         }
 
-        /* Botón volver */
         #proxy-back {
             position: fixed;
             top: 22px; left: 22px;
@@ -608,6 +600,215 @@
             box-shadow: 0 0 22px rgba(0,210,255,0.5);
             transform: translateY(-2px);
         }
+
+        /* ══════════════════════════════════════════
+           MODAL DE ACTUALIZACIONES RECIENTES
+           ══════════════════════════════════════════ */
+        #updates-modal {
+            position: fixed;
+            inset: 0;
+            z-index: 20000;
+            background: rgba(0, 0, 0, 0.82);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            opacity: 0;
+            transition: opacity 0.35s ease;
+        }
+        #updates-modal.active {
+            display: flex;
+            opacity: 1;
+        }
+        #updates-modal.closing {
+            opacity: 0;
+        }
+
+        .updates-card {
+            position: relative;
+            width: 100%;
+            max-width: 560px;
+            max-height: 88vh;
+            border-radius: 26px;
+            padding: 4px;
+            background: linear-gradient(120deg, rgba(0,210,255,0.85), rgba(255,0,85,0.75), rgba(0,210,255,0.85));
+            background-size: 220% 220%;
+            animation: panel-border-flow 8s ease-in-out infinite,
+                       updates-pop-in 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+            box-shadow:
+                0 0 40px rgba(0,210,255,0.35),
+                0 0 80px rgba(255,0,85,0.25),
+                inset 0 0 30px rgba(255,255,255,0.05);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .updates-card::before {
+            content: "";
+            position: absolute;
+            inset: 3px;
+            border-radius: 23px;
+            background: radial-gradient(circle at 20% 15%, rgba(0,210,255,0.18), transparent 35%),
+                        radial-gradient(circle at 80% 25%, rgba(255,0,85,0.18), transparent 32%),
+                        linear-gradient(135deg, rgba(11,14,24,0.99), rgba(6,8,14,0.99));
+            z-index: 0;
+        }
+        .updates-card::after {
+            content: "";
+            position: absolute;
+            inset: -60% -10%;
+            background: linear-gradient(120deg, transparent 35%, rgba(255,255,255,0.10) 50%, transparent 65%);
+            transform: translateX(-45%);
+            animation: panel-sweep 7s linear infinite;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        @keyframes updates-pop-in {
+            0%   { opacity: 0; transform: scale(0.82) translateY(20px); }
+            100% { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        .updates-header {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 18px 22px 16px;
+            border-bottom: 1px solid rgba(0,210,255,0.18);
+            background: linear-gradient(90deg, rgba(0,210,255,0.10), rgba(255,0,85,0.10));
+        }
+        .updates-icon {
+            font-size: 1.6rem;
+            filter: drop-shadow(0 0 12px rgba(0,210,255,0.7));
+            animation: updates-icon-pulse 2s ease-in-out infinite;
+        }
+        @keyframes updates-icon-pulse {
+            0%, 100% { transform: scale(1); }
+            50%      { transform: scale(1.12); }
+        }
+        .updates-title {
+            font-size: 0.98rem;
+            font-weight: 900;
+            letter-spacing: 2.5px;
+            text-transform: uppercase;
+            color: #fff;
+            flex: 1;
+            text-shadow:
+                0 0 10px rgba(0,210,255,0.7),
+                0 0 22px rgba(0,210,255,0.35);
+        }
+        .updates-version {
+            font-size: 0.7rem;
+            font-weight: 900;
+            letter-spacing: 1.2px;
+            color: var(--neon-green);
+            background: rgba(57,255,20,0.12);
+            border: 1px solid rgba(57,255,20,0.5);
+            padding: 4px 10px;
+            border-radius: 999px;
+            box-shadow: 0 0 12px rgba(57,255,20,0.35);
+            text-transform: uppercase;
+        }
+
+        .updates-subtitle {
+            position: relative;
+            z-index: 2;
+            font-size: 0.72rem;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: rgba(255,255,255,0.45);
+            font-weight: 800;
+            padding: 12px 22px 0;
+        }
+
+        .updates-body {
+            position: relative;
+            z-index: 2;
+            padding: 14px 22px 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(0,210,255,0.4) transparent;
+        }
+        .updates-body::-webkit-scrollbar { width: 6px; }
+        .updates-body::-webkit-scrollbar-thumb {
+            background: rgba(0,210,255,0.4);
+            border-radius: 3px;
+        }
+
+        .update-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 10px 14px;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(0,210,255,0.14);
+            border-left: 3px solid var(--neon-blue);
+            border-radius: 10px;
+            font-size: 0.85rem;
+            color: rgba(255,255,255,0.85);
+            line-height: 1.5;
+            transition: all 0.2s ease;
+        }
+        .update-item:hover {
+            background: rgba(0,210,255,0.07);
+            border-left-color: var(--neon-pink);
+            transform: translateX(3px);
+        }
+        .update-item strong {
+            color: #7df9ff;
+            font-weight: 900;
+            text-shadow: 0 0 8px rgba(0,210,255,0.5);
+        }
+        .update-item code {
+            background: rgba(57,255,20,0.12);
+            color: var(--neon-green);
+            padding: 1px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.8rem;
+        }
+
+        .updates-close-btn {
+            position: relative;
+            z-index: 2;
+            margin: 0 22px 20px;
+            padding: 14px 20px;
+            border-radius: 16px;
+            font-family: inherit;
+            font-weight: 900;
+            font-size: 0.95rem;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            cursor: pointer;
+            border: none;
+            color: #fff;
+            background: linear-gradient(90deg, var(--neon-blue), var(--neon-pink));
+            background-size: 200% 100%;
+            box-shadow: 0 0 22px rgba(0,210,255,0.4), 0 0 22px rgba(255,0,85,0.25);
+            transition: all 0.25s ease;
+        }
+        .updates-close-btn:hover {
+            background-position: 100% 50%;
+            transform: translateY(-2px);
+            box-shadow: 0 0 32px rgba(0,210,255,0.65), 0 0 32px rgba(255,0,85,0.45);
+        }
+        .updates-close-btn:active { transform: translateY(0); }
+
+        @media (max-width: 500px) {
+            .updates-card { max-width: 100%; }
+            .updates-title { font-size: 0.82rem; letter-spacing: 1.5px; }
+            .updates-header { padding: 14px 16px 12px; }
+            .updates-subtitle { padding: 10px 16px 0; }
+            .updates-body { padding: 12px 16px 16px; }
+            .updates-close-btn { margin: 0 16px 16px; padding: 12px 16px; font-size: 0.85rem; }
+        }
     </style>
     <meta http-equiv="Permissions-Policy" content="camera=(self), microphone=(self)">
 </head>
@@ -615,7 +816,7 @@
 
 <div id="bubbles-bg"></div>
 
-<!-- ── BOTÓN DEL LOGO (arriba izquierda) — significa "estás en Ultron Games" ── -->
+<!-- ── BOTÓN DEL LOGO (arriba izquierda) ── -->
 <div id="menu-toggle" title="Ultron Games" onclick="volverAlInicio()">
     <img id="menu-toggle-logo" src="" alt="Ultron Games">
 </div>
@@ -623,6 +824,20 @@
 <!-- ── BOTÓN PROXY (debajo del logo) ── -->
 <div id="proxy-toggle" title="Buscador con Proxy" onclick="mostrarProximamente()">
     <img id="proxy-toggle-logo" src="" alt="Proxy">
+</div>
+
+<!-- ── MODAL DE ACTUALIZACIONES RECIENTES ── -->
+<div id="updates-modal" role="dialog" aria-modal="true" aria-labelledby="updates-title">
+    <div class="updates-card">
+        <div class="updates-header">
+            <span class="updates-icon">🚀</span>
+            <span class="updates-title" id="updates-title">ACTUALIZACIONES RECIENTES</span>
+            <span class="updates-version" id="updates-version">v2.0</span>
+        </div>
+        <div class="updates-subtitle" id="updates-subtitle"></div>
+        <div class="updates-body" id="updates-body"></div>
+        <button class="updates-close-btn" onclick="cerrarUpdates()">Ver juegos ▶</button>
+    </div>
 </div>
 
 <!-- ── PANTALLA "ESTAMOS TRABAJANDO" ── -->
@@ -652,7 +867,7 @@
                 <span class="search-icon">⌕</span>
                 <input id="search-input" type="text" placeholder="Buscar juego en todas las categorías...">
             </div>
-            <!-- ── CATEGORÍAS COMO BOTONES CON ICONO (solo icono, sin título) ── -->
+            <!-- ── CATEGORÍAS COMO BOTONES CON ICONO ── -->
             <div class="category-bar" id="category-bar">
                 <button class="cat-btn active" data-category="todos" title="Todos los juegos"><img class="cat-icon" src="https://cdn-icons-png.flaticon.com/512/2949/2949874.png" alt="Todos"></button>
                 <button class="cat-btn" data-category="aventura" title="Juegos de Aventura"><img class="cat-icon" src="https://cdn-icons-png.flaticon.com/512/8193/8193154.png" alt="Aventura"></button>
@@ -737,30 +952,43 @@
     const LOGO_LOADING_URL = 'https://raw.githack.com/derekonsio1023-gif/Ultron-games/main/assets/logo.png';
     const LOGO_INTRO_URL = 'https://raw.githack.com/derekonsio1023-gif/Ultron-games/main/assets/Watermark.png';
     const INTRO_SOUND_URL = 'https://raw.githack.com/derekonsio1023-gif/Ultron-games-Spanish/main/assets/Ultron.mp3';
-    const LOGO_PROXY_URL = 'https://cdn-icons-png.flaticon.com/512/5988/5988576.png'; // cámbialo por tu logo del proxy
+    const LOGO_PROXY_URL = 'https://cdn-icons-png.flaticon.com/512/5988/5988576.png';
 
     // Firebase (solo para sugerencias)
     const _db = 'ultron-bd064-default-rtdb.europe-west1.firebasedatabase';
     function _getDB() { return `https://${_db}.app`; }
 
     // ══════════════════════════════════════════════════════════════
-    // SLOTS DE JUEGOS
-    // ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
-    // PEGA AQUÍ TODOS TUS SLOTS TAL CUAL LOS TIENES.
-    // Los slots NO cambian respecto a tu versión original.
-    //
-    // Para marcar un juego como NUEVO (verde neón, burbujas y primero en la lista),
-    // añade la propiedad  nuevo: true   al slot. Ejemplo:
-    //
-    //   1: { titulo: "Backrooms", img: "...", url: "...", nuevo: true,
-    //        tags: { genero: ["terror","aventura"], ambientacion: ["realista","3d"],
-    //                modo: ["un_jugador"], estilo: ["dificil","historia"],
-    //                plataforma: ["ambos"] } },
-    //
-    // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
+    // ⚙️ CONFIGURACIÓN DEL CARTEL DE ACTUALIZACIONES
     // ══════════════════════════════════════════════════════════════
+    // Personaliza este objeto para controlar el cartel que aparece al entrar.
+    //
+    //   activo:                    → true/false para mostrarlo u ocultarlo
+    //   mostrarSoloUnaVezPorSesion → true para que no vuelva a salir hasta
+    //                                cerrar la pestaña (usa sessionStorage)
+    //   version:                   → texto de la etiqueta superior derecha
+    //   subtitulo:                 → texto pequeño debajo del título (fecha, etc.)
+    //   textoBoton:                → texto del botón inferior
+    //   contenido:                 → líneas que empiezan por "- " se convierten
+    //                                en viñetas. Soporta **negrita** y `código`.
+    // ══════════════════════════════════════════════════════════════
+    const UPDATES_CONFIG = {
+        activo: true,
+        mostrarSoloUnaVezPorSesion: false,
+        titulo: "ACTUALIZACIONES RECIENTES",
+        version: "Beta 3",
+        textoBoton: "Cerrar",
+        contenido: `
+- 🚀 **Nuevo tablón de actualizaciones**
+- 🎮 **Nuevos juegos**- Gang Beasts, How to fish...
+- 🛠 **Juegos arreglados**
+- 🔍 **Ultron Search**- Google con proxy
+- 👀 **Juegos para Beta 4**- Ovenless brownies baldi y 2000 juegos más
+        `.trim(),
+    };
+
     const CONFIG = {
-            1: { titulo: "Backrooms", img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSKKh1u918ZKxGm7x_Zul7wNIYK2soB4y2EFQ&s", url: "https://backroom-five.vercel.app/", time: 0, tags: { genero: ["terror","aventura"], ambientacion: ["realista","3d"], modo: ["un_jugador"], estilo: ["dificil","historia"], plataforma: ["ambos"] } },
+        1: { titulo: "Backrooms", img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSKKh1u918ZKxGm7x_Zul7wNIYK2soB4y2EFQ&s", url: "https://backroom-five.vercel.app/", time: 0, tags: { genero: ["terror","aventura"], ambientacion: ["realista","3d"], modo: ["un_jugador"], estilo: ["dificil","historia"], plataforma: ["ambos"] } },
         2: { titulo: "Ball Survivor", img: "", url: "https://raw.githack.com/derekonsio1023-gif/Fluffy-totus/main/Ball_Survivor.html", time: 0, tags: { genero: ["accion","sandbox"], ambientacion: ["3d"], modo: ["un_jugador"], estilo: ["infinito","rapido"], plataforma: ["movil"] } },
         3: { titulo: "Build Now GG", img: "https://play-lh.googleusercontent.com/Jkx-IPLeRDk4uKeDyIMWKQ6jv9RquAC0WErGzWIMZQK7Z8FKzsqbUtC0J7vTm24xIqnme3TZR-6a8WAj6EXP_DA", url: "https://raw.githack.com/zynq-platform/buildnow-gg/refs/heads/main/index.html", time: 0, tags: { genero: ["accion","sandbox"], ambientacion: ["moderno","3d"], modo: ["multijugador","online"], estilo: ["rapido","infinito"], plataforma: ["pc"] } },
         4: { titulo: "Among Us", img: "https://static.wikia.nocookie.net/among-us-wiki/images/8/84/Among_Us.png/revision/latest?cb=20240408020746", url: "https://raw.githack.com/BreadEpic/Among-Us/refs/heads/main/index.html", time: 0, tags: { genero: ["accion","estrategia"], ambientacion: ["scifi","3d"], modo: ["multijugador","online","coop"], estilo: ["rapido"], plataforma: ["ambos"] } },
@@ -1795,7 +2023,9 @@
 1034: { titulo: "bloxd-io", img: "https://store-images.s-microsoft.com/image/apps.1341.14525867990573942.1097e7b3-d236-4b06-b0fc-73f5b2ad5f74.c8dfb2ef-9e0b-491a-8616-a9503797c213", url: "https://raw.githack.com/ahrdevelopers/bloxd-io/refs/heads/main/index.html", tags: { genero: ["aventura"], ambientacion: ["3d"], modo: ["multijugador"], estilo: ["sandbox"], plataforma: ["movil"] } },
 1035: { titulo: "bloxors", img: "", url: "https://raw.githack.com/ahrdevelopers/bloxors/refs/heads/main/index.html", tags: { genero: ["puzzle"], ambientacion: ["2d"], modo: ["un_jugador"], estilo: ["logico"], plataforma: ["movil"] } },
 1036: { titulo: "Gang Beasts Offline", img: "https://pbs.twimg.com/ext_tw_video_thumb/1591115384974987267/pu/img/m2VUAcg9gXd_peb4?format=webp&name=large", url: "https://raw.githack.com/derekonsio1023-gif/Ultron-games-Spanish/refs/heads/main/Games/Gang%20Beasts/index.html", tags: { genero: ["puzzle"], ambientacion: ["2d"], modo: ["un_jugador"], estilo: ["logico"], plataforma: ["movil"] } },
-1036: { titulo: "How to Fish Online", img: "https://sm.ign.com/ign_fr/cover/h/how-to-fis/how-to-fish_p7kn.jpg", url: "https://raw.githack.com/derekonsio1023-gif/Ultron-games-Spanish/refs/heads/main/Games/How%20to%20fish/index.html", tags: { genero: ["puzzle"], ambientacion: ["2d"], modo: ["un_jugador"], estilo: ["logico"], plataforma: ["movil"] } },
+1037: { titulo: "How to Fish Online", img: "https://sm.ign.com/ign_fr/cover/h/how-to-fis/how-to-fish_p7kn.jpg", url: "https://raw.githack.com/derekonsio1023-gif/Ultron-games-Spanish/refs/heads/main/Games/How%20to%20fish/index.html", tags: { genero: ["puzzle"], ambientacion: ["2d"], modo: ["un_jugador"], estilo: ["logico"], plataforma: ["movil"] } },
+        1038: { titulo: "Keyboard Escape", img: "https://imgs.crazygames.com/1-speed-keyboard-lucky-escape_1x1/20260921071416/1-speed-keyboard-lucky-escape_1x1-cover.png?format=auto&quality=70&metadata=none", url: "https://raw.githack.com/derekonsio1023-gif/Ultron-games-Spanish/refs/heads/main/Games/Keyboard%20Escape/index7.html", tags: { genero: ["puzzle"], ambientacion: ["2d"], modo: ["un_jugador"], estilo: ["logico"], plataforma: ["movil"] } },
+        1039: { titulo: "+1 Jump per Click", img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRAXPWySfbE0PcBiv-PqcivdTGQszr9kX-IZoeiDvn68ziyt7Xhnad74F8&s=10", url: "https://raw.githack.com/derekonsio1023-gif/Ultron-games-Spanish/refs/heads/main/Games/%2B1Jumpperclick/index2.html", tags: { genero: ["puzzle"], ambientacion: ["2d"], modo: ["un_jugador"], estilo: ["logico"], plataforma: ["movil"] } },
     };
 
     // ══════════════════════════════════════════════════════════════
@@ -1806,14 +2036,12 @@
     let currentCategory = 'todos';
     let currentPage = 1;
     let currentLang = 'es';
-    let searchQuery = '';           // 👈 búsqueda global
+    let searchQuery = '';
     let introAudioEl = null;
     let isGameRunning = false;
     let currentGameData = null;
 
     // ── CATEGORÍAS ──
-    // Cada categoría tiene `match(g)` que decide si un juego pertenece a ella,
-    // revisando sus `tags`. Un juego pertenece si la función devuelve true.
     const CATEGORIAS = {
         aventura:      { label: 'Juegos de Aventura', match: g => g.tags?.genero?.includes('aventura') },
         supervivencia: { label: 'Supervivencia',        match: g => g.tags?.genero?.includes('terror') || g.tags?.estilo?.includes('supervivencia') },
@@ -1838,7 +2066,7 @@
         todos:         { label: 'Todos los juegos',     match: () => true }
     };
 
-    // ── FILTRADO Y ORDEN (con búsqueda global) ──
+    // ── FILTRADO Y ORDEN ──
     function getFilteredEntries() {
         const cat = CATEGORIAS[currentCategory] || CATEGORIAS.todos;
         const q = searchQuery.trim().toLowerCase();
@@ -1848,7 +2076,6 @@
             const slot = Number(slotStr);
             if (!cat.match(game)) continue;
             const titulo = game.titulo || 'Próximamente';
-            // 🔍 Búsqueda GLOBAL: si hay query, se aplica a TODOS los juegos de todas las páginas
             if (q && !titulo.toLowerCase().includes(q)) continue;
             entries.push({
                 slot,
@@ -1857,7 +2084,6 @@
                 nuevo: game.nuevo === true
             });
         }
-        // Los nuevos (con `nuevo: true`) siempre van primero
         const nuevos = entries.filter(e => e.nuevo).sort((a, b) => b.slot - a.slot);
         const viejos = entries.filter(e => !e.nuevo);
 
@@ -1906,9 +2132,8 @@
         return card;
     }
 
-    // ── CARD RANDOM (primer slot, con fondo de img aleatoria) ──
+    // ── CARD RANDOM ──
     function crearCardRandom() {
-        // Recolectamos todas las imágenes no vacías de todos los juegos
         const imgs = Object.values(CONFIG)
             .filter(g => g && g.img && g.img !== '')
             .map(g => g.img);
@@ -1953,7 +2178,6 @@
         const end = start + JUEGOS_POR_PAGINA;
         const pageEntries = entries.slice(start, end);
 
-        // Título con indicador de búsqueda activa
         const q = searchQuery.trim();
         if (q) {
             title.textContent = `Resultados para "${q}" (${entries.length})`;
@@ -1962,7 +2186,6 @@
         }
 
         grid.innerHTML = '';
-        // El primer slot "Random" solo se muestra si NO hay búsqueda activa
         if (!q) grid.appendChild(crearCardRandom());
 
         if (pageEntries.length === 0) {
@@ -2017,12 +2240,116 @@
         cont.appendChild(info);
     }
 
-    // ── INTRO ──
-function reproducirIntroCinematica(onComplete) {
-    // 🚫 INTRO DESACTIVADA — pasa directo al juego
-    if (typeof onComplete === 'function') onComplete();
-    return;
-}
+    // ══════════════════════════════════════════════════════════════
+    // 🚀 CARTEL DE ACTUALIZACIONES — LÓGICA
+    // ══════════════════════════════════════════════════════════════
+    const UPDATES_SESSION_KEY = 'ultron_updates_seen_' + (UPDATES_CONFIG.version || 'v1');
+
+    function formatearLineaUpdates(linea) {
+        // Escapa HTML para seguridad
+        let t = linea
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+        // **negrita**
+        t = t.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+        // `código`
+        t = t.replace(/`([^`]+)`/g, '<code>$1</code>');
+        return t;
+    }
+
+    function renderUpdatesModal() {
+        const modal = document.getElementById('updates-modal');
+        if (!modal || !UPDATES_CONFIG.activo) return;
+
+        // Título y versión
+        const titleEl = document.getElementById('updates-title');
+        const versionEl = document.getElementById('updates-version');
+        const subtitleEl = document.getElementById('updates-subtitle');
+        const bodyEl = document.getElementById('updates-body');
+        const btnEl = modal.querySelector('.updates-close-btn');
+
+        if (titleEl) titleEl.textContent = UPDATES_CONFIG.titulo || 'ACTUALIZACIONES RECIENTES';
+        if (versionEl) {
+            if (UPDATES_CONFIG.version) {
+                versionEl.textContent = UPDATES_CONFIG.version;
+                versionEl.style.display = '';
+            } else {
+                versionEl.style.display = 'none';
+            }
+        }
+        if (subtitleEl) {
+            if (UPDATES_CONFIG.subtitulo) {
+                subtitleEl.textContent = UPDATES_CONFIG.subtitulo;
+                subtitleEl.style.display = '';
+            } else {
+                subtitleEl.style.display = 'none';
+            }
+        }
+        if (btnEl) btnEl.textContent = UPDATES_CONFIG.textoBoton || 'Ver juegos ▶';
+
+        // Contenido → viñetas
+        if (bodyEl) {
+            bodyEl.innerHTML = '';
+            const lineas = (UPDATES_CONFIG.contenido || '')
+                .split('\n')
+                .map(l => l.trim())
+                .filter(Boolean);
+
+            if (!lineas.length) {
+                bodyEl.innerHTML = '<div class="update-item">✨ ¡Bienvenido a Ultron!</div>';
+            } else {
+                lineas.forEach(l => {
+                    const div = document.createElement('div');
+                    div.className = 'update-item';
+                    // Quita el guión inicial si lo tiene
+                    const texto = l.replace(/^[-•*]\s*/, '');
+                    div.innerHTML = formatearLineaUpdates(texto);
+                    bodyEl.appendChild(div);
+                });
+            }
+        }
+    }
+
+    function abrirUpdates() {
+        const modal = document.getElementById('updates-modal');
+        if (!modal) return;
+        renderUpdatesModal();
+        modal.classList.add('active');
+        modal.classList.remove('closing');
+    }
+
+    function cerrarUpdates() {
+        const modal = document.getElementById('updates-modal');
+        if (!modal) return;
+        modal.classList.add('closing');
+        setTimeout(() => {
+            modal.classList.remove('active', 'closing');
+        }, 300);
+        try {
+            sessionStorage.setItem(UPDATES_SESSION_KEY, '1');
+        } catch (e) {}
+    }
+
+    function deberiaMostrarUpdates() {
+        if (!UPDATES_CONFIG.activo) return false;
+        if (UPDATES_CONFIG.mostrarSoloUnaVezPorSesion) {
+            try {
+                if (sessionStorage.getItem(UPDATES_SESSION_KEY) === '1') return false;
+            } catch (e) {}
+        }
+        return true;
+    }
+
+    // Exponer helper por si quieres abrirlo manualmente desde consola:
+    //   MOSTRAR_UPDATES()
+    window.MOSTRAR_UPDATES = abrirUpdates;
+
+    // ── INTRO (desactivada) ──
+    function reproducirIntroCinematica(onComplete) {
+        if (typeof onComplete === 'function') onComplete();
+        return;
+    }
 
     // ── LANZAR JUEGO ──
     async function lanzarJuego(game, slot) {
@@ -2099,7 +2426,7 @@ function reproducirIntroCinematica(onComplete) {
     }
     function continuarJuego() { document.getElementById('pause-menu').classList.remove('active'); }
 
-    // ── BOTÓN LOGO (Ultron Games) ──
+    // ── BOTÓN LOGO ──
     function volverAlInicio() {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -2198,7 +2525,6 @@ function reproducirIntroCinematica(onComplete) {
             sortSelect.addEventListener('change', () => { currentSort = sortSelect.value; currentPage = 1; renderMenu(); });
         }
 
-        // 🔍 Búsqueda GLOBAL: filtra entre TODAS las páginas y re-pagina
         const input = document.getElementById('search-input');
         if (input) {
             input.addEventListener('input', () => {
@@ -2217,7 +2543,6 @@ function reproducirIntroCinematica(onComplete) {
             });
         }
 
-        // Categorías (barra horizontal)
         document.querySelectorAll('#category-bar .cat-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 document.querySelectorAll('#category-bar .cat-btn').forEach(b => b.classList.remove('active'));
@@ -2229,17 +2554,36 @@ function reproducirIntroCinematica(onComplete) {
             });
         });
 
-        // Enter en sugerencias
         const sugInput = document.getElementById('suggestion-input');
         if (sugInput) sugInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') enviarSugerencia(); });
 
-        // Escape cierra la pantalla proxy
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') cerrarProxyScreen();
+            if (e.key === 'Escape') {
+                const modal = document.getElementById('updates-modal');
+                if (modal && modal.classList.contains('active')) {
+                    cerrarUpdates();
+                    return;
+                }
+                cerrarProxyScreen();
+            }
         });
+
+        // Click en el fondo oscuro del modal → cerrar
+        const updatesModal = document.getElementById('updates-modal');
+        if (updatesModal) {
+            updatesModal.addEventListener('click', (e) => {
+                if (e.target === updatesModal) cerrarUpdates();
+            });
+        }
 
         renderMenu();
         renderSugerencias();
+
+        // 🚀 Mostrar el cartel de actualizaciones al entrar (si corresponde)
+        if (deberiaMostrarUpdates()) {
+            // Pequeño retardo para que se asiente el render de la página
+            setTimeout(() => abrirUpdates(), 280);
+        }
     }
     window.addEventListener('load', initUltron);
 
@@ -2253,6 +2597,23 @@ function reproducirIntroCinematica(onComplete) {
             c.appendChild(p);
         }
     }
+</script>
+<script>
+(function() {
+    const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+            mutation.addedNodes.forEach((node) => {
+                if (node.tagName === 'IMG' && !node.crossOrigin) {
+                    node.crossOrigin = 'anonymous';
+                }
+            });
+        });
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+    document.querySelectorAll('img').forEach(img => {
+        if (!img.crossOrigin) img.crossOrigin = 'anonymous';
+    });
+})();
 </script>
 </body>
 </html>
