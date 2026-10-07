@@ -419,7 +419,7 @@ async function main() {
   if (extra) globalThis.SKATE_ARGS = JSON.parse(extra);
 
   status('Starting engine (decoding map, compiling shaders)...');
-  const { default: init } = await import('skate3rust.js');
+  const { default: init } = await import('./skate3rust.js');
   try {
     const running = init(wasmBytes ? { module_or_path: wasmBytes } : undefined);
     wasmBytes = null;
