@@ -20,6 +20,24 @@
     // Carpeta LOCAL que contiene catalog_0.1.0.bin/.hash y los .bundle
     var LOCAL_AA = 'itsjasonstudiobasebacket/GamersMod/Adressables/1.4/';
 
+    // Mapa alias: nombre largo del catalogo -> fichero corto disponible en local.
+    // Verificado por contenido (Backgrounds/GameNews/AssetConfiguration/backrooms/Male07/crowbar/...).
+    // NOTA: flatgrass NO existe en local. Se mapea temporalmente a backrooms para
+    // que el juego arranque en un mapa jugable en vez de quedarse en "Can't load selected map".
+    var ALIAS = {
+        'common_assets_assets__game__so_ui_backgrounds.asset_72d0267a4608114b2637a3c4e9e7b65d.bundle': 'commonasset2.bundle',
+        'common_assets_assets__game__so_ui_updatenews__gamenews.asset_67c220397c0da803a2e113bf21526930.bundle': 'commonasset1.bundle',
+        'configs_assets_assets__game__so_gameassets_assetconfiguration_1_4.asset_dcf1ce30cf1f90b90ea24ec34b331e84.bundle': 'configsassets.bundle',
+        'maps_scenes_assets__game_maps_backrooms_backrooms.unity_b11431c2f4bb0d38ec5f6416204636e5.bundle': 'mapsscenesasstes.bundle',
+        'maps_scenes_assets__game_maps_gm_flatgrass_gm_flatgrass.unity_dda70ca904c0d0a8e08a6d82202e97d8.bundle': 'mapsscenesasstes.bundle',
+        'playermodels_assets_assets__game_prefabs_gameassets_playermodels_male07_pm_male07_dataholder.prefab_939d3e849768c35916d3c3eef36d8a5f.bundle': 'playermodelsassets.bundle',
+        'weapons_base_assets_assets__game_prefabs_gameassets_weapons_base_crowbar.prefab_157527c5f1d5b5290801e734a84434f0.bundle': 'weapons_base_crowbar.prefab.bundle',
+        'weapons_base_assets_assets__game_prefabs_gameassets_weapons_base_gravitygun.prefab_91e7eafda8d7a4d0bf5ca38e0299c389.bundle': 'weapons_base_gravitygun.prefab.bundle',
+        'weapons_base_assets_assets__game_prefabs_gameassets_weapons_base_physgun.prefab_0b435d887561c333b2b34ae95e3d25ec.bundle': 'weapons_base_physgun.bundle',
+        'weapons_base_assets_assets__game_prefabs_gameassets_weapons_base_toolgun.prefab_4def15e5f51348ae9b0c636575647b77.bundle': 'weapons_base_toolgun.bundle',
+        '0eff098cdc127729560ebd6f8d91601c_unitybuiltinassets_1e8b50180a2f5c3c709840e54fa600af.bundle': '0eff098cdc127729560ebd6f8d91601c_monoscripts_3f53ed8be35d6c2187dc7811e1d7c603.bundle'
+    };
+
     function getBase() {
         try {
             return new URL(LOCAL_AA, document.baseURI).href;
@@ -51,10 +69,14 @@
 
         var clean = stripQuery(url).toLowerCase();
 
-        // 1) Cualquier AssetBundle -> carpeta local (por nombre de archivo)
+        // 1) Cualquier AssetBundle -> carpeta local (por nombre de archivo, con alias corto si existe)
         if (clean.slice(-7) === '.bundle') {
             var bundlename = basename(removePlaceholders(stripQuery(url)));
             if (bundlename && bundlename.slice(-7).toLowerCase() === '.bundle') {
+                var aliased = ALIAS[bundlename] || ALIAS[bundlename.toLowerCase()];
+                if (aliased) {
+                    return getBase() + aliased;
+                }
                 return getBase() + bundlename;
             }
         }
