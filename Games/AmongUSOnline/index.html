@@ -9,12 +9,8 @@
 
     <title>Play Classic Us | AUAD</title>
 
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-
     <link rel="preload" href="/assets/css/Brook.otf" as="font" type="font/otf" crossorigin>
-    <link rel="stylesheet" href="/assets/css/site.css?v=1791025923">
+    <link rel="stylesheet" href="/assets/css/site.css">
 
     <style>
         html, body { height: 100%; overflow: hidden; }
@@ -237,146 +233,186 @@
     </main>
 
     <script>
-        const SERVER_HOSTS = {
-            "178.156.171.131": "na.realauad.com",
-            "46.62.194.17":    "eu.realauad.com",
-        };
+    const SERVER_HOSTS = {
+        "178.156.171.131": "na.realauad.com",
+        "46.62.194.17":    "eu.realauad.com",
+    };
 
-        const API_HOST = "api.realauad.com";
-        const downloads = {};
-        const loader = document.getElementById("loader");
-        const bar = document.getElementById("taskbar");
-        const fill = document.getElementById("taskbar-fill");
-        const label = document.getElementById("taskbar-label");
-        const bytesEl = document.getElementById("loader-bytes");
-        const pctEl = document.getElementById("loader-pct");
+    const API_HOST = "api.realauad.com";
+    const downloads = {};
+    const loader = document.getElementById("loader");
+    const bar = document.getElementById("taskbar");
+    const fill = document.getElementById("taskbar-fill");
+    const label = document.getElementById("taskbar-label");
+    const bytesEl = document.getElementById("loader-bytes");
+    const pctEl = document.getElementById("loader-pct");
 
-        const mb = n => (n / 1048576).toFixed(n < 10485760 ? 1 : 0) + " MB";
-        let shown = 0;
+    const mb = n => (n / 1048576).toFixed(n < 10485760 ? 1 : 0) + " MB";
+    let shown = 0;
 
-        function rewriteServerUrl(raw) {
-            let url;
-            try { url = new URL(String(raw), location.href); } catch { return raw; }
-            const isApi = url.pathname.startsWith("/account/") || url.port === "22030";
+    function rewriteServerUrl(raw) {
+        let url;
+        try { url = new URL(String(raw), location.href); } catch { return raw; }
+        const isApi = url.pathname.startsWith("/account/") || url.port === "22030";
 
-            if (url.hostname === "na.realauad.com") {
-                if (!isApi) return raw;
-                url.hostname = API_HOST;
-                return url.href;
-            }
-
-            let host = SERVER_HOSTS[url.hostname];
-            if (!host) return raw;
-            if (isApi) host = API_HOST;
-            url.protocol = url.protocol.startsWith("ws") ? "wss:" : "https:";
-            url.hostname = host;
-            url.port = "";
+        if (url.hostname === "na.realauad.com") {
+            if (!isApi) return raw;
+            url.hostname = API_HOST;
             return url.href;
         }
 
-        (function () {
-            const nativeFetch = window.fetch.bind(window);
-            window.fetch = function (input, init) {
-                if (input instanceof Request) {
-                    const to = rewriteServerUrl(input.url);
-                    return nativeFetch(to === input.url ? input : new Request(to, input), init);
-                }
-                return nativeFetch(rewriteServerUrl(input), init);
-            };
+        let host = SERVER_HOSTS[url.hostname];
+        if (!host) return raw;
+        if (isApi) host = API_HOST;
+        url.protocol = url.protocol.startsWith("ws") ? "wss:" : "https:";
+        url.hostname = host;
+        url.port = "";
+        return url.href;
+    }
 
-            const open = XMLHttpRequest.prototype.open;
-            XMLHttpRequest.prototype.open = function (method, url, ...rest) {
-                return open.call(this, method, rewriteServerUrl(url), ...rest);
-            };
-
-            const NativeWebSocket = window.WebSocket;
-            function RewrittenWebSocket(url, protocols) {
-                return protocols === undefined
-                    ? new NativeWebSocket(rewriteServerUrl(url))
-                    : new NativeWebSocket(rewriteServerUrl(url), protocols);
+    (function () {
+        const nativeFetch = window.fetch.bind(window);
+        window.fetch = function (input, init) {
+            if (input instanceof Request) {
+                const to = rewriteServerUrl(input.url);
+                return nativeFetch(to === input.url ? input : new Request(to, input), init);
             }
-            RewrittenWebSocket.prototype = NativeWebSocket.prototype;
-            Object.setPrototypeOf(RewrittenWebSocket, NativeWebSocket);
-            window.WebSocket = RewrittenWebSocket;
-        })();
-
-        const realFetch = window.fetch.bind(window);
-
-        window.fetch = async function (input, init) {
-            const res = await realFetch(input, init);
-            const url = typeof input === "string" ? input : input.url;
-            if (!/(^|\/)Build\//.test(decodeURI(url)) || /symbols/.test(url) || !res.body) return res;
-
-            const total = Number(res.headers.get("content-length")) || 0;
-            const entry = downloads[url] = { loaded: 0, total };
-            const reader = res.body.getReader();
-            const counted = new ReadableStream({
-                async pull(controller) {
-                    const { done, value } = await reader.read();
-                    if (done) { entry.loaded = entry.total || entry.loaded; controller.close(); return; }
-                    entry.loaded += value.byteLength;
-                    controller.enqueue(value);
-                },
-                cancel(reason) { reader.cancel(reason); }
-            });
-            const wrapped = new Response(counted, { status: res.status, statusText: res.statusText, headers: res.headers });
-            Object.defineProperty(wrapped, "url", { value: res.url });
-            return wrapped;
+            return nativeFetch(rewriteServerUrl(input), init);
         };
 
-        function render(unityProgress) {
-            let loaded = 0, total = 0, unknownSize = false;
-            for (const d of Object.values(downloads)) {
-                loaded += d.loaded;
-                if (d.total) total += d.total; else unknownSize = true;
-            }
+        const open = XMLHttpRequest.prototype.open;
+        XMLHttpRequest.prototype.open = function (method, url, ...rest) {
+            return open.call(this, method, rewriteServerUrl(url), ...rest);
+        };
 
-            let pct;
-            if (unityProgress >= 0.9) {
-                pct = 90 + (unityProgress - 0.9) * 100;
-                label.textContent = "Starting up";
-                bytesEl.textContent = total ? mb(total) + " downloaded" : "Almost there…";
-            } else if (total && !unknownSize) {
-                pct = (loaded / total) * 90;
-                bytesEl.textContent = mb(loaded) + " of " + mb(total);
-            } else {
-                pct = unityProgress * 100;
-                bytesEl.textContent = loaded ? mb(loaded) + " downloaded" : "Loading…";
-            }
-
-            shown = Math.max(shown, Math.min(pct, 100));
-            fill.style.width = shown + "%";
-            pctEl.textContent = Math.floor(shown) + "%";
-            bar.setAttribute("aria-valuenow", Math.floor(shown));
+        const NativeWebSocket = window.WebSocket;
+        function RewrittenWebSocket(url, protocols) {
+            return protocols === undefined
+                ? new NativeWebSocket(rewriteServerUrl(url))
+                : new NativeWebSocket(rewriteServerUrl(url), protocols);
         }
+        RewrittenWebSocket.prototype = NativeWebSocket.prototype;
+        Object.setPrototypeOf(RewrittenWebSocket, NativeWebSocket);
+        window.WebSocket = RewrittenWebSocket;
+    })();
 
-        let lastUnity = 0;
-        const ticker = setInterval(() => render(lastUnity), 250);
+    const realFetch = window.fetch.bind(window);
 
-        function fail(err) {
-            clearInterval(ticker);
-            document.getElementById("loader-error-msg").textContent = String(err && err.message || err);
-            loader.classList.add("failed");
-        }
+    window.fetch = async function (input, init) {
+        const res = await realFetch(input, init);
+        const url = typeof input === "string" ? input : input.url;
+        if (!/(^|\/)Build\//.test(decodeURI(url)) || /symbols/.test(url) || !res.body) return res;
 
-        let unityInstance = null;
-
-        document.getElementById("fullscreen-btn").addEventListener("click", () => {
-            if (unityInstance) unityInstance.SetFullscreen(1);
-            else document.documentElement.requestFullscreen?.();
+        const total = Number(res.headers.get("content-length")) || 0;
+        const entry = downloads[url] = { loaded: 0, total };
+        const reader = res.body.getReader();
+        const counted = new ReadableStream({
+            async pull(controller) {
+                const { done, value } = await reader.read();
+                if (done) { entry.loaded = entry.total || entry.loaded; controller.close(); return; }
+                entry.loaded += value.byteLength;
+                controller.enqueue(value);
+            },
+            cancel(reason) { reader.cancel(reason); }
         });
+        const wrapped = new Response(counted, { status: res.status, statusText: res.statusText, headers: res.headers });
+        Object.defineProperty(wrapped, "url", { value: res.url });
+        return wrapped;
+    };
 
-        const canvas = document.getElementById("unity-canvas");
-        canvas.addEventListener("pointerdown", () => canvas.focus());
+    function render(unityProgress) {
+        let loaded = 0, total = 0, unknownSize = false;
+        for (const d of Object.values(downloads)) {
+            loaded += d.loaded;
+            if (d.total) total += d.total; else unknownSize = true;
+        }
+
+        let pct;
+        if (unityProgress >= 0.9) {
+            pct = 90 + (unityProgress - 0.9) * 100;
+            label.textContent = "Starting up";
+            bytesEl.textContent = total ? mb(total) + " downloaded" : "Almost there…";
+        } else if (total && !unknownSize) {
+            pct = (loaded / total) * 90;
+            bytesEl.textContent = mb(loaded) + " of " + mb(total);
+        } else {
+            pct = unityProgress * 100;
+            bytesEl.textContent = loaded ? mb(loaded) + " downloaded" : "Loading…";
+        }
+
+        shown = Math.max(shown, Math.min(pct, 100));
+        fill.style.width = shown + "%";
+        pctEl.textContent = Math.floor(shown) + "%";
+        bar.setAttribute("aria-valuenow", Math.floor(shown));
+    }
+
+    let lastUnity = 0;
+    const ticker = setInterval(() => render(lastUnity), 250);
+
+    function fail(err) {
+        clearInterval(ticker);
+        document.getElementById("loader-error-msg").textContent = String(err && err.message || err);
+        loader.classList.add("failed");
+    }
+
+    let unityInstance = null;
+
+    document.getElementById("fullscreen-btn").addEventListener("click", () => {
+        if (unityInstance) unityInstance.SetFullscreen(1);
+        else document.documentElement.requestFullscreen?.();
+    });
+
+    const canvas = document.getElementById("unity-canvas");
+    canvas.addEventListener("pointerdown", () => canvas.focus());
+
+    // =====================================================================
+    // REENSAMBLADO DE PARTES
+    // =====================================================================
+    // Cambia aquí según lo que hayas partido con 7-Zip:
+    //   - "data"  -> partiste "Classic Us WEB.data" (lo más probable, es el pesado)
+    //   - "wasm"  -> partiste "Classic Us WEB.wasm"
+    const WHICH_IS_SPLIT = "data";
+
+    // Nombre base y número de partes (tus archivos: Classic Us WEB.001, .002, .003)
+    const SPLIT_BASE = "Classic Us WEB";
+    const SPLIT_PARTS = 3;
+
+    async function reassembleParts(baseName, numParts, mimeType) {
+        const buffers = [];
+        for (let i = 1; i <= numParts; i++) {
+            const partUrl = `Build/${baseName}.${String(i).padStart(3, "0")}`;
+            const res = await fetch(partUrl);
+            if (!res.ok) throw new Error(`Failed to fetch ${partUrl}: HTTP ${res.status}`);
+            buffers.push(await res.arrayBuffer());
+        }
+        const blob = new Blob(buffers, { type: mimeType });
+        return URL.createObjectURL(blob);
+    }
+
+    (async () => {
+        let splitBlobUrl;
+        try {
+            const mime = WHICH_IS_SPLIT === "wasm"
+                ? "application/wasm"
+                : "application/octet-stream";
+            splitBlobUrl = await reassembleParts(SPLIT_BASE, SPLIT_PARTS, mime);
+        } catch (e) {
+            fail(e);
+            return;
+        }
+
+        const dataUrl   = WHICH_IS_SPLIT === "data" ? splitBlobUrl : "Build/Classic Us WEB.data?v=1791046953";
+        const codeUrl   = WHICH_IS_SPLIT === "wasm" ? splitBlobUrl : "Build/Classic Us WEB.wasm?v=1791046931";
+        const frameworkUrl = "Build/Classic Us WEB.framework.js?v=1791046914";
 
         const script = document.createElement("script");
         script.src = "Build/Classic Us WEB.loader.js?v=1791046914";
         script.onerror = () => fail("Couldn't load the game loader.");
         script.onload = () => {
             createUnityInstance(canvas, {
-                dataUrl: "Build/Classic Us WEB.data?v=1791046953",
-                frameworkUrl: "Build/Classic Us WEB.framework.js?v=1791046914",
-                codeUrl: "Build/Classic Us WEB.wasm?v=1791046931",
+                dataUrl: dataUrl,
+                frameworkUrl: frameworkUrl,
+                codeUrl: codeUrl,
                 symbolsUrl: "Build/Classic Us WEB.symbols.json?v=1791046921",
                 streamingAssetsUrl: "StreamingAssets",
                 companyName: "AUAD",
@@ -391,11 +427,13 @@
                     loader.classList.add("done");
                     canvas.focus();
                     window.fetch = realFetch;
+                    URL.revokeObjectURL(splitBlobUrl);
                 })
                 .catch(fail);
         };
         document.body.appendChild(script);
-    </script>
+    })();
+</script>
 </body>
 
 </html>
