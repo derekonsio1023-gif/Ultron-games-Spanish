@@ -8,8 +8,6 @@
     <link rel="shortcut icon" href="TemplateData/favicon.ico">
     <link rel="stylesheet" href="TemplateData/style.css">
     <style>
-      /* Overrides TemplateData/style.css, which is what draws the bordered 960x600 box and the
-         grey footer bar. Loaded after it so these win without editing that file. */
       html, body {
         width: 100%;
         height: 100%;
@@ -18,7 +16,6 @@
         overflow: hidden;
         background: #000;
       }
-
       #unity-container {
         position: absolute;
         top: 0;
@@ -27,7 +24,6 @@
         height: 100%;
         transform: none;
       }
-
       #unity-canvas {
         display: block;
         width: 100%;
@@ -35,10 +31,7 @@
         background: #000;
         outline: none;
       }
-
-      /* The Unity logo / fullscreen button / build title strip. */
       #unity-footer { display: none; }
-
       #unity-loading-bar {
         position: absolute;
         top: 50%;
@@ -46,7 +39,6 @@
         transform: translate(-50%, -50%);
         display: none;
       }
-
       #unity-status {
         margin-top: 12px;
         width: 154px;
@@ -56,7 +48,6 @@
         color: #bbb;
         white-space: nowrap;
       }
-
       #unity-warning {
         position: absolute;
         top: 12px;
@@ -64,7 +55,6 @@
         transform: translateX(-50%);
         background: transparent;
       }
-
       #unity-error {
         position: absolute;
         top: 50%;
@@ -111,8 +101,6 @@
         errorBox.innerHTML = msg;
       }
 
-      // Shows a temporary message banner/ribbon for a few seconds, or
-      // a permanent error message on top of the canvas if type=='error'.
       function unityShowBanner(msg, type) {
         function updateBannerVisibility() {
           warningBanner.style.display = warningBanner.children.length ? 'block' : 'none';
@@ -136,46 +124,39 @@
       var dataUrl = buildUrl + "/ClusterTruckWEB.data";
       var wasmUrl = buildUrl + "/ClusterTruckWEB.wasm";
 
-      // ---------------------------------------------------------------------------------------
-      // Split-file reassembly.
+      // =======================================================================================
+      // CONFIGURACIÓN DE PARTES
+      // =======================================================================================
+      // Cambia estos dos números según cuántas partes haya en tu repo de GitHub.
+      //   - Si ClusterTruckWEB.data está partido en .part1, .part2, .part3 -> pon 3
+      //   - Si ClusterTruckWEB.data está entero (sin .partN)               -> pon 0
+      //   - Lo mismo para el wasm.
       //
-      // ClusterTruckWEB.data (103 MB) and ClusterTruckWEB.wasm (84 MB) are each too big for hosts
-      // that cap individual files (GitHub's limit is 100 MB), so they are uploaded as sequential
-      // byte-range chunks named  <file>.part1, .part2, ...  This downloads the chunks in order,
-      // concatenates them into a Blob, and hands Unity a blob: URL instead of the real path.
-      //
-      // If no .part1 exists next to a file, that file is used directly and untouched -- so this
-      // same page works both on a host with only the split parts and locally with the whole files.
-      //
-      // The wasm Blob MUST carry type "application/wasm": blob: URLs report their Blob's type as
-      // the Content-Type, and WebAssembly.instantiateStreaming rejects anything else.
-      // ---------------------------------------------------------------------------------------
+      // Deben coincidir EXACTAMENTE con lo que hay en la carpeta Build/ de tu repo.
+      var NUM_DATA_PARTS = 0;   // <<< AJUSTA AQUÍ (partes de ClusterTruckWEB.data)
+      var NUM_WASM_PARTS = 0;   // <<< AJUSTA AQUÍ (partes de ClusterTruckWEB.wasm)
 
-      var MAX_PARTS = 128;
+      // =======================================================================================
+      // Reensamblado de archivos partidos.
+      //
+      // Descarga en orden <archivo>.part1, .part2, ... y los concatena en un Blob. Unity
+      // recibe un blob: URL en lugar de la ruta real. Los blob: URLs heredan el MIME del
+      // Blob, y WebAssembly.instantiateStreaming exige "application/wasm" para el wasm.
+      //
+      // NOTA: NO usamos peticiones HEAD para descubrir las partes porque raw.githack.com
+      // responde 403 a HEAD, lo cual hacía fallar toda la carga con
+      // "both async and sync fetching of the wasm failed".
+      // =======================================================================================
 
-      async function headOk(url) {
-        try {
-          var res = await fetch(url, { method: "HEAD" });
-          return res.ok ? res : null;
-        } catch (e) {
-          return null;
+      function buildPlan(url, count) {
+        var arr = [];
+        for (var i = 1; i <= count; i++) {
+          arr.push({ url: url + ".part" + i, size: 0 });
         }
+        return arr;
       }
 
-      // Probe <url>.part1, .part2, ... until one is missing. Returns [{url, size}].
-      async function discoverParts(url) {
-        var parts = [];
-        for (var i = 1; i <= MAX_PARTS; i++) {
-          var partUrl = url + ".part" + i;
-          var res = await headOk(partUrl);
-          if (!res) break;
-          var len = parseInt(res.headers.get("content-length") || "0", 10);
-          parts.push({ url: partUrl, size: isNaN(len) ? 0 : len });
-        }
-        return parts;
-      }
-
-      // Streams one part, reporting bytes as they arrive so the bar moves during a long chunk.
+      // Streams one part, reporting bytes as they arrive.
       async function fetchPart(url, onBytes) {
         var res = await fetch(url);
         if (!res.ok) throw new Error("Failed to fetch " + url + " (HTTP " + res.status + ")");
@@ -207,9 +188,8 @@
 
       async function resolveUrl(url, mimeType, label, plan, onBytes) {
         var parts = plan[url];
-        if (!parts || !parts.length) return url;   // not split - use the file as-is
+        if (!parts || !parts.length) return url;   // no está partido - se usa el archivo tal cual
 
-        statusText.textContent = "Assembling " + label + "...";
         var buffers = [];
         for (var i = 0; i < parts.length; i++) {
           statusText.textContent = "Downloading " + label + " (" + (i + 1) + "/" + parts.length + ")";
@@ -223,30 +203,42 @@
 
       async function boot() {
         loadingBar.style.display = "block";
-        statusText.textContent = "Checking files...";
+        statusText.textContent = "Preparing...";
 
-        // Discover both up front so total byte count (and therefore the progress bar) is accurate.
         var plan = {};
-        plan[dataUrl] = await discoverParts(dataUrl);
-        plan[wasmUrl] = await discoverParts(wasmUrl);
+        plan[dataUrl] = buildPlan(dataUrl, NUM_DATA_PARTS);
+        plan[wasmUrl] = buildPlan(wasmUrl, NUM_WASM_PARTS);
 
-        var totalBytes = 0;
-        Object.keys(plan).forEach(function (k) {
-          plan[k].forEach(function (p) { totalBytes += p.size; });
-        });
-
-        var loadedBytes = 0;
-        function onBytes(n) {
-          loadedBytes += n;
-          if (totalBytes > 0) {
-            // Reserve the last 10% of the bar for Unity's own startup.
-            var frac = Math.min(loadedBytes / totalBytes, 1);
-            progressBarFull.style.width = (frac * 90) + "%";
+        // No conocemos los tamaños sin HEAD, así que la barra avanzará de forma estimada
+        // según cuántas partes se hayan descargado.
+        var totalParts = plan[dataUrl].length + plan[wasmUrl].length;
+        var doneParts = 0;
+        function bumpProgress() {
+          doneParts++;
+          if (totalParts > 0) {
+            progressBarFull.style.width = (doneParts / totalParts * 90) + "%";
           }
         }
+        function onBytes(_n) { /* no usado sin tamaños conocidos */ }
 
-        var resolvedData = await resolveUrl(dataUrl, "application/octet-stream", "game data", plan, onBytes);
-        var resolvedWasm = await resolveUrl(wasmUrl, "application/wasm", "engine", plan, onBytes);
+        // Envolvemos resolveUrl para ir moviendo la barra por partes completadas.
+        async function resolveUrlWithProgress(url, mime, label) {
+          var parts = plan[url];
+          if (!parts || !parts.length) return url;
+          var buffers = [];
+          for (var i = 0; i < parts.length; i++) {
+            statusText.textContent = "Downloading " + label + " (" + (i + 1) + "/" + parts.length + ")";
+            buffers.push(await fetchPart(parts[i].url, onBytes));
+            bumpProgress();
+          }
+          var blob = new Blob(buffers, { type: mime });
+          var objUrl = URL.createObjectURL(blob);
+          objectUrls.push(objUrl);
+          return objUrl;
+        }
+
+        var resolvedData = await resolveUrlWithProgress(dataUrl, "application/octet-stream", "game data");
+        var resolvedWasm = await resolveUrlWithProgress(wasmUrl, "application/wasm", "engine");
 
         statusText.textContent = "Starting...";
 
@@ -264,13 +256,7 @@
         if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
           container.className = "unity-mobile";
           canvas.className = "unity-mobile";
-          // Uncomment to lower render resolution on mobile for performance:
-          // config.devicePixelRatio = 1;
         }
-
-        // The canvas is sized by CSS to fill the window. Unity keeps the WebGL render target matched
-        // to the canvas DOM size (scaled by devicePixelRatio) on its own, so the game renders at the
-        // full window resolution and follows window resizes with no extra code.
 
         await new Promise(function (resolve, reject) {
           var script = document.createElement("script");
@@ -286,13 +272,11 @@
 
         loadingBar.style.display = "none";
 
-        // The Blobs are ~190 MB combined; releasing them once Unity has read them hands that memory
-        // back rather than holding it for the whole session.
+        // Liberar los Blobs (~190 MB) una vez Unity los ha leído.
         objectUrls.forEach(function (u) { URL.revokeObjectURL(u); });
         objectUrls = [];
 
-        // The footer's fullscreen button is gone, so expose real (F11-style) fullscreen on a key
-        // instead. The canvas already fills the page without it.
+        // Fullscreen con la tecla F (el botón del footer está oculto por CSS).
         window.addEventListener("keydown", function (e) {
           if (e.key === "F" || e.key === "f") {
             if (e.target === document.body || e.target === canvas) {
