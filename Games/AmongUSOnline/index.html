@@ -233,207 +233,212 @@
     </main>
 
     <script>
-    const SERVER_HOSTS = {
-        "178.156.171.131": "na.realauad.com",
-        "46.62.194.17":    "eu.realauad.com",
-    };
+        // --- Constantes del proxy ---
+        const PROXY_HOST = "classicusproxy.fly.dev";
+        const SERVER_HOSTS = {
+            "178.156.171.131": "na.realauad.com",
+            "46.62.194.17":    "eu.realauad.com",
+        };
+        const API_HOST = "api.realauad.com";
 
-    const API_HOST = "api.realauad.com";
-    const downloads = {};
-    const loader = document.getElementById("loader");
-    const bar = document.getElementById("taskbar");
-    const fill = document.getElementById("taskbar-fill");
-    const label = document.getElementById("taskbar-label");
-    const bytesEl = document.getElementById("loader-bytes");
-    const pctEl = document.getElementById("loader-pct");
+        // --- UI del loader ---
+        const downloads = {};
+        const loader = document.getElementById("loader");
+        const bar = document.getElementById("taskbar");
+        const fill = document.getElementById("taskbar-fill");
+        const label = document.getElementById("taskbar-label");
+        const bytesEl = document.getElementById("loader-bytes");
+        const pctEl = document.getElementById("loader-pct");
 
-    const mb = n => (n / 1048576).toFixed(n < 10485760 ? 1 : 0) + " MB";
-    let shown = 0;
+        const mb = n => (n / 1048576).toFixed(n < 10485760 ? 1 : 0) + " MB";
+        let shown = 0;
 
-    function rewriteServerUrl(raw) {
+        // --- Reescritura de URLs hacia el proxy ---
+        function rewriteServerUrl(raw) {
         let url;
         try { url = new URL(String(raw), location.href); } catch { return raw; }
-        const isApi = url.pathname.startsWith("/account/") || url.port === "22030";
 
-        if (url.hostname === "na.realauad.com") {
-            if (!isApi) return raw;
-            url.hostname = API_HOST;
-            return url.href;
+        const hostname = url.hostname;
+        const isApi = url.pathname.startsWith("/account/") || url.port === "22030";
+        let prefix = null;
+
+        if (isApi) {
+            prefix = "/api";
+        } else if (hostname === "na.realauad.com" || hostname === "178.156.171.131") {
+            prefix = "/na";
+        } else if (hostname === "eu.realauad.com" || hostname === "46.62.194.17") {
+            prefix = "/eu";
+        } else if (hostname === "api.realauad.com") {
+            prefix = "/api";
         }
 
-        let host = SERVER_HOSTS[url.hostname];
-        if (!host) return raw;
-        if (isApi) host = API_HOST;
+        if (!prefix) return raw;
+
         url.protocol = url.protocol.startsWith("ws") ? "wss:" : "https:";
-        url.hostname = host;
+        url.hostname = PROXY_HOST;
         url.port = "";
+        url.pathname = prefix + url.pathname;
         return url.href;
     }
 
-    (function () {
-        const nativeFetch = window.fetch.bind(window);
-        window.fetch = function (input, init) {
-            if (input instanceof Request) {
-                const to = rewriteServerUrl(input.url);
-                return nativeFetch(to === input.url ? input : new Request(to, input), init);
+        // --- Wrappers: fetch, XHR y WebSocket pasan por rewriteServerUrl ---
+        (function () {
+            const nativeFetch = window.fetch.bind(window);
+            window.fetch = function (input, init) {
+                if (input instanceof Request) {
+                    const to = rewriteServerUrl(input.url);
+                    return nativeFetch(to === input.url ? input : new Request(to, input), init);
+                }
+                return nativeFetch(rewriteServerUrl(input), init);
+            };
+
+            const open = XMLHttpRequest.prototype.open;
+            XMLHttpRequest.prototype.open = function (method, url, ...rest) {
+                return open.call(this, method, rewriteServerUrl(url), ...rest);
+            };
+
+            const NativeWebSocket = window.WebSocket;
+            function RewrittenWebSocket(url, protocols) {
+                return protocols === undefined
+                    ? new NativeWebSocket(rewriteServerUrl(url))
+                    : new NativeWebSocket(rewriteServerUrl(url), protocols);
             }
-            return nativeFetch(rewriteServerUrl(input), init);
+            RewrittenWebSocket.prototype = NativeWebSocket.prototype;
+            Object.setPrototypeOf(RewrittenWebSocket, NativeWebSocket);
+            window.WebSocket = RewrittenWebSocket;
+        })();
+
+        // --- Wrapper de progreso (cuenta bytes de Build/) ---
+        const realFetch = window.fetch.bind(window);
+        window.fetch = async function (input, init) {
+            const res = await realFetch(input, init);
+            const url = typeof input === "string" ? input : input.url;
+            if (!/(^|\/)Build\//.test(decodeURI(url)) || /symbols/.test(url) || !res.body) return res;
+
+            const total = Number(res.headers.get("content-length")) || 0;
+            const entry = downloads[url] = { loaded: 0, total };
+            const reader = res.body.getReader();
+            const counted = new ReadableStream({
+                async pull(controller) {
+                    const { done, value } = await reader.read();
+                    if (done) { entry.loaded = entry.total || entry.loaded; controller.close(); return; }
+                    entry.loaded += value.byteLength;
+                    controller.enqueue(value);
+                },
+                cancel(reason) { reader.cancel(reason); }
+            });
+            const wrapped = new Response(counted, { status: res.status, statusText: res.statusText, headers: res.headers });
+            Object.defineProperty(wrapped, "url", { value: res.url });
+            return wrapped;
         };
 
-        const open = XMLHttpRequest.prototype.open;
-        XMLHttpRequest.prototype.open = function (method, url, ...rest) {
-            return open.call(this, method, rewriteServerUrl(url), ...rest);
-        };
+        // --- Render de la barra de progreso ---
+        function render(unityProgress) {
+            let loaded = 0, total = 0, unknownSize = false;
+            for (const d of Object.values(downloads)) {
+                loaded += d.loaded;
+                if (d.total) total += d.total; else unknownSize = true;
+            }
 
-        const NativeWebSocket = window.WebSocket;
-        function RewrittenWebSocket(url, protocols) {
-            return protocols === undefined
-                ? new NativeWebSocket(rewriteServerUrl(url))
-                : new NativeWebSocket(rewriteServerUrl(url), protocols);
+            let pct;
+            if (unityProgress >= 0.9) {
+                pct = 90 + (unityProgress - 0.9) * 100;
+                label.textContent = "Starting up";
+                bytesEl.textContent = total ? mb(total) + " downloaded" : "Almost there…";
+            } else if (total && !unknownSize) {
+                pct = (loaded / total) * 90;
+                bytesEl.textContent = mb(loaded) + " of " + mb(total);
+            } else {
+                pct = unityProgress * 100;
+                bytesEl.textContent = loaded ? mb(loaded) + " downloaded" : "Loading…";
+            }
+
+            shown = Math.max(shown, Math.min(pct, 100));
+            fill.style.width = shown + "%";
+            pctEl.textContent = Math.floor(shown) + "%";
+            bar.setAttribute("aria-valuenow", Math.floor(shown));
         }
-        RewrittenWebSocket.prototype = NativeWebSocket.prototype;
-        Object.setPrototypeOf(RewrittenWebSocket, NativeWebSocket);
-        window.WebSocket = RewrittenWebSocket;
-    })();
 
-    const realFetch = window.fetch.bind(window);
+        let lastUnity = 0;
+        const ticker = setInterval(() => render(lastUnity), 250);
 
-    window.fetch = async function (input, init) {
-        const res = await realFetch(input, init);
-        const url = typeof input === "string" ? input : input.url;
-        if (!/(^|\/)Build\//.test(decodeURI(url)) || /symbols/.test(url) || !res.body) return res;
+        function fail(err) {
+            clearInterval(ticker);
+            document.getElementById("loader-error-msg").textContent = String(err && err.message || err);
+            loader.classList.add("failed");
+        }
 
-        const total = Number(res.headers.get("content-length")) || 0;
-        const entry = downloads[url] = { loaded: 0, total };
-        const reader = res.body.getReader();
-        const counted = new ReadableStream({
-            async pull(controller) {
-                const { done, value } = await reader.read();
-                if (done) { entry.loaded = entry.total || entry.loaded; controller.close(); return; }
-                entry.loaded += value.byteLength;
-                controller.enqueue(value);
-            },
-            cancel(reason) { reader.cancel(reason); }
+        let unityInstance = null;
+
+        document.getElementById("fullscreen-btn").addEventListener("click", () => {
+            if (unityInstance) unityInstance.SetFullscreen(1);
+            else document.documentElement.requestFullscreen?.();
         });
-        const wrapped = new Response(counted, { status: res.status, statusText: res.statusText, headers: res.headers });
-        Object.defineProperty(wrapped, "url", { value: res.url });
-        return wrapped;
-    };
 
-    function render(unityProgress) {
-        let loaded = 0, total = 0, unknownSize = false;
-        for (const d of Object.values(downloads)) {
-            loaded += d.loaded;
-            if (d.total) total += d.total; else unknownSize = true;
+        const canvas = document.getElementById("unity-canvas");
+        canvas.addEventListener("pointerdown", () => canvas.focus());
+
+        // --- Reensamblado de las partes del .data (split binario) ---
+        const WHICH_IS_SPLIT = "data";
+        const SPLIT_BASE = "Classic Us WEB";
+        const SPLIT_PARTS = 3;
+
+        async function reassembleParts(baseName, numParts, mimeType) {
+            const buffers = [];
+            for (let i = 1; i <= numParts; i++) {
+                const partUrl = `Build/${baseName}.${String(i).padStart(3, "0")}`;
+                const res = await fetch(partUrl);
+                if (!res.ok) throw new Error(`Failed to fetch ${partUrl}: HTTP ${res.status}`);
+                buffers.push(await res.arrayBuffer());
+            }
+            const blob = new Blob(buffers, { type: mimeType });
+            return URL.createObjectURL(blob);
         }
 
-        let pct;
-        if (unityProgress >= 0.9) {
-            pct = 90 + (unityProgress - 0.9) * 100;
-            label.textContent = "Starting up";
-            bytesEl.textContent = total ? mb(total) + " downloaded" : "Almost there…";
-        } else if (total && !unknownSize) {
-            pct = (loaded / total) * 90;
-            bytesEl.textContent = mb(loaded) + " of " + mb(total);
-        } else {
-            pct = unityProgress * 100;
-            bytesEl.textContent = loaded ? mb(loaded) + " downloaded" : "Loading…";
-        }
+        // --- Arranque ---
+        (async () => {
+            let splitBlobUrl;
+            try {
+                const mime = WHICH_IS_SPLIT === "wasm" ? "application/wasm" : "application/octet-stream";
+                splitBlobUrl = await reassembleParts(SPLIT_BASE, SPLIT_PARTS, mime);
+            } catch (e) {
+                fail(e);
+                return;
+            }
 
-        shown = Math.max(shown, Math.min(pct, 100));
-        fill.style.width = shown + "%";
-        pctEl.textContent = Math.floor(shown) + "%";
-        bar.setAttribute("aria-valuenow", Math.floor(shown));
-    }
+            const dataUrl = WHICH_IS_SPLIT === "data" ? splitBlobUrl : "Build/Classic Us WEB.data?v=1791046953";
+            const codeUrl = WHICH_IS_SPLIT === "wasm" ? splitBlobUrl : "Build/Classic Us WEB.wasm?v=1791046931";
+            const frameworkUrl = "Build/Classic Us WEB.framework.js?v=1791046914";
 
-    let lastUnity = 0;
-    const ticker = setInterval(() => render(lastUnity), 250);
-
-    function fail(err) {
-        clearInterval(ticker);
-        document.getElementById("loader-error-msg").textContent = String(err && err.message || err);
-        loader.classList.add("failed");
-    }
-
-    let unityInstance = null;
-
-    document.getElementById("fullscreen-btn").addEventListener("click", () => {
-        if (unityInstance) unityInstance.SetFullscreen(1);
-        else document.documentElement.requestFullscreen?.();
-    });
-
-    const canvas = document.getElementById("unity-canvas");
-    canvas.addEventListener("pointerdown", () => canvas.focus());
-
-    // =====================================================================
-    // REENSAMBLADO DE PARTES
-    // =====================================================================
-    // Cambia aquí según lo que hayas partido con 7-Zip:
-    //   - "data"  -> partiste "Classic Us WEB.data" (lo más probable, es el pesado)
-    //   - "wasm"  -> partiste "Classic Us WEB.wasm"
-    const WHICH_IS_SPLIT = "data";
-
-    // Nombre base y número de partes (tus archivos: Classic Us WEB.001, .002, .003)
-    const SPLIT_BASE = "Classic Us WEB";
-    const SPLIT_PARTS = 3;
-
-    async function reassembleParts(baseName, numParts, mimeType) {
-        const buffers = [];
-        for (let i = 1; i <= numParts; i++) {
-            const partUrl = `Build/${baseName}.${String(i).padStart(3, "0")}`;
-            const res = await fetch(partUrl);
-            if (!res.ok) throw new Error(`Failed to fetch ${partUrl}: HTTP ${res.status}`);
-            buffers.push(await res.arrayBuffer());
-        }
-        const blob = new Blob(buffers, { type: mimeType });
-        return URL.createObjectURL(blob);
-    }
-
-    (async () => {
-        let splitBlobUrl;
-        try {
-            const mime = WHICH_IS_SPLIT === "wasm"
-                ? "application/wasm"
-                : "application/octet-stream";
-            splitBlobUrl = await reassembleParts(SPLIT_BASE, SPLIT_PARTS, mime);
-        } catch (e) {
-            fail(e);
-            return;
-        }
-
-        const dataUrl   = WHICH_IS_SPLIT === "data" ? splitBlobUrl : "Build/Classic Us WEB.data?v=1791046953";
-        const codeUrl   = WHICH_IS_SPLIT === "wasm" ? splitBlobUrl : "Build/Classic Us WEB.wasm?v=1791046931";
-        const frameworkUrl = "Build/Classic Us WEB.framework.js?v=1791046914";
-
-        const script = document.createElement("script");
-        script.src = "Build/Classic Us WEB.loader.js?v=1791046914";
-        script.onerror = () => fail("Couldn't load the game loader.");
-        script.onload = () => {
-            createUnityInstance(canvas, {
-                dataUrl: dataUrl,
-                frameworkUrl: frameworkUrl,
-                codeUrl: codeUrl,
-                symbolsUrl: "Build/Classic Us WEB.symbols.json?v=1791046921",
-                streamingAssetsUrl: "StreamingAssets",
-                companyName: "AUAD",
-                productName: "Classic Us",
-                productVersion: "2026.9.20",
-                showBanner: (msg, type) => { if (type === "error") fail(msg); else console.warn(msg); },
-            }, p => { lastUnity = p; render(p); })
-                .then(instance => {
-                    unityInstance = instance;
-                    clearInterval(ticker);
-                    render(1);
-                    loader.classList.add("done");
-                    canvas.focus();
-                    window.fetch = realFetch;
-                    URL.revokeObjectURL(splitBlobUrl);
-                })
-                .catch(fail);
-        };
-        document.body.appendChild(script);
-    })();
-</script>
+            const script = document.createElement("script");
+            script.src = "Build/Classic Us WEB.loader.js?v=1791046914";
+            script.onerror = () => fail("Couldn't load the game loader.");
+            script.onload = () => {
+                createUnityInstance(canvas, {
+                    dataUrl: dataUrl,
+                    frameworkUrl: frameworkUrl,
+                    codeUrl: codeUrl,
+                    symbolsUrl: "Build/Classic Us WEB.symbols.json?v=1791046921",
+                    streamingAssetsUrl: "StreamingAssets",
+                    companyName: "AUAD",
+                    productName: "Classic Us",
+                    productVersion: "2026.9.20",
+                    showBanner: (msg, type) => { if (type === "error") fail(msg); else console.warn(msg); },
+                }, p => { lastUnity = p; render(p); })
+                    .then(instance => {
+                        unityInstance = instance;
+                        clearInterval(ticker);
+                        render(1);
+                        loader.classList.add("done");
+                        canvas.focus();
+                        window.fetch = realFetch;
+                        URL.revokeObjectURL(splitBlobUrl);
+                    })
+                    .catch(fail);
+            };
+            document.body.appendChild(script);
+        })();
+    </script>
 </body>
 
 </html>

@@ -10,13 +10,6 @@
   font-display: swap;
 }
 
-@font-face {
-  font-family: 'Liberation Sans';
-  src: url(LiberationSans-Bd.otf) format('opentype');
-  font-weight: bold;
-  font-display: swap;
-}
-
 :root {
   --bg: #050505;
   --white: #f4f4f4;
