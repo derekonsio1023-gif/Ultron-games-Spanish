@@ -234,29 +234,46 @@
 
     <script>
 // --- Constantes del servidor ---
-            const SERVER_HOST = "https://ultron-amonguswaterway.onrender.com"; // Reemplaza con tu URL real
-            
-            function rewriteServerUrl(raw) {
-                let url;
-                try {
-                    url = new URL(String(raw), location.href);
-                } catch {
-                    return raw;
-                }
-            
-                const hostname = url.hostname;
-            
-                // Redirigir todas las conexiones de juego a tu servidor en Render
-                if (hostname === "na.realauad.com" || hostname === "eu.realauad.com" || hostname === "178.156.171.131" || hostname === "46.62.194.17") {
-                    url.hostname = SERVER_HOST;
-                    url.protocol = "wss:"; // Forzar WebSocket seguro
-                    url.port = ""; // Dejar que la URL maneje el puerto (Render usa 443 para wss)
-                }
-            
-                // (Opcional) Si necesitas un proxy para otros fines, puedes mantenerlo, pero para el juego no es necesario.
-                // ... (resto de la lógica de reescritura si es necesario)
-                return url.href;
-            }
+           // Solo el host, sin protocolo ni barras
+const SERVER_HOST = "ultron-amonguswaterway.onrender.com";
+
+function rewriteServerUrl(raw) {
+    let url;
+    try {
+        url = new URL(String(raw), location.href);
+    } catch {
+        return raw;
+    }
+
+    const hostname = url.hostname;
+
+    // Juego: NA/EU -> Render
+    if (
+        hostname === "na.realauad.com" ||
+        hostname === "eu.realauad.com" ||
+        hostname === "178.156.171.131" ||
+        hostname === "46.62.194.17"
+    ) {
+        url.protocol = "wss:";          // WebSocket seguro
+        url.hostname = SERVER_HOST;      // solo el host
+        url.port = "";                   // Render usa 443
+        return url.href;
+    }
+
+    // API de cuentas / presencia
+    if (
+        hostname === "api.realauad.com" ||
+        url.pathname.startsWith("/account/") ||
+        url.port === "22030"
+    ) {
+        url.protocol = "https:";
+        url.hostname = SERVER_HOST;
+        url.port = "";
+        return url.href;
+    }
+
+    return raw;
+}
 
 
 
