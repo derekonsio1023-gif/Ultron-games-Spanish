@@ -254,32 +254,74 @@
         let shown = 0;
 
         // --- Reescritura de URLs hacia el proxy ---
-        function rewriteServerUrl(raw) {
-        let url;
-        try { url = new URL(String(raw), location.href); } catch { return raw; }
+        
+function rewriteServerUrl(raw) {
+    let url;
 
-        const hostname = url.hostname;
-        const isApi = url.pathname.startsWith("/account/") || url.port === "22030";
-        let prefix = null;
+    try {
+        url = new URL(String(raw), location.href);
+    } catch {
+        return raw;
+    }
 
-        if (isApi) {
-            prefix = "/api";
-        } else if (hostname === "na.realauad.com" || hostname === "178.156.171.131") {
-            prefix = "/na";
-        } else if (hostname === "eu.realauad.com" || hostname === "46.62.194.17") {
-            prefix = "/eu";
-        } else if (hostname === "api.realauad.com") {
-            prefix = "/api";
-        }
+    const hostname = url.hostname;
+    const pathname = url.pathname;
 
-        if (!prefix) return raw;
-
-        url.protocol = url.protocol.startsWith("ws") ? "wss:" : "https:";
-        url.hostname = PROXY_HOST;
-        url.port = "";
-        url.pathname = prefix + url.pathname;
+    // Evita volver a reescribir URLs que ya pasan por el Worker.
+    if (hostname === PROXY_HOST) {
         return url.href;
     }
+
+    let prefix = null;
+
+    // API de cuentas y servicios HTTP.
+    if (
+    hostname === API_HOST ||
+    (
+        (hostname === "178.156.171.131" ||
+         hostname === "46.62.194.17" ||
+         hostname === "na.realauad.com" ||
+         hostname === "eu.realauad.com") &&
+        url.port === "22030"
+    )
+) {
+    prefix = "/api";
+} else if (
+        hostname === "na.realauad.com" ||
+        hostname === "178.156.171.131"
+    ) {
+        prefix = "/na";
+    } else if (
+        hostname === "eu.realauad.com" ||
+        hostname === "46.62.194.17"
+    ) {
+        prefix = "/eu";
+    }
+
+    // No modificar otros dominios.
+    if (!prefix) {
+        return raw;
+    }
+
+    // Añade el prefijo solo si la ruta aún no lo contiene.
+    if (
+        pathname !== prefix &&
+        !pathname.startsWith(prefix + "/")
+    ) {
+        url.pathname = prefix + pathname;
+    }
+
+    // El navegador conecta de forma segura con el Worker.
+    url.protocol = url.protocol.startsWith("ws")
+        ? "wss:"
+        : "https:";
+
+    url.hostname = PROXY_HOST;
+    url.port = "";
+
+    return url.href;
+}
+
 
         // --- Wrappers: fetch, XHR y WebSocket pasan por rewriteServerUrl ---
         (function () {
