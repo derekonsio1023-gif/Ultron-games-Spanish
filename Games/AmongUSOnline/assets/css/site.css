@@ -30,7 +30,7 @@ html { background: var(--bg); scroll-behavior: smooth; }
 body {
   margin: 0;
   color: var(--white);
-  background: var(--bg) url('/assets/png/bg.png') repeat;
+  background: var(--bg) url('./assets/png/bg.png') repeat;
   background-size: 700px auto;
   font-family: 'Liberation Sans', Arial, sans-serif;
   font-size: 17px;
@@ -680,7 +680,7 @@ body:has(> #app) { min-height: 100vh; display: flex; flex-direction: column; }
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #0d0d0d url('/assets/png/bg.png') repeat;
+  background: #0d0d0d url('s/png/bg.png') repeat;
   background-size: 400px auto;
   border-bottom: 1px solid var(--hair);
 }
@@ -823,7 +823,7 @@ body:has(> #app)::before {
   left: -700px;
   right: 0;
   z-index: -2;
-  background: url('/assets/png/bg.png') repeat;
+  background: url('./assets/png/bg.png') repeat;
   background-size: 700px auto;
   animation: stars-drift 140s linear infinite;
   pointer-events: none;
@@ -900,7 +900,7 @@ body:has(> #app)::before {
   align-items: center;
   justify-content: center;
   gap: 40px;
-  background: #000 url('/assets/png/bg.png') repeat;
+  background: #000 url('./assets/png/bg.png') repeat;
   background-size: 700px auto;
   cursor: pointer;
   animation: fade-in .3s ease;
