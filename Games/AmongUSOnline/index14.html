@@ -260,39 +260,31 @@ function rewriteServerUrl(raw) {
     const hostname = url.hostname;
     const pathname = url.pathname;
 
-    // 1. Redirigir las conexiones de juego (WebSocket) a Render
+    // 1. PRIMERO: llamadas API → siempre HTTPS
+    if (
+        hostname === "api.realauad.com" ||
+        pathname.startsWith("/account/") ||
+        pathname.startsWith("/api/")
+    ) {
+        url.protocol = "https:";
+        url.hostname = SERVER_HOST;
+        url.port = "";
+        return url.href;
+    }
+
+    // 2. DESPUÉS: conexiones de juego → WebSocket seguro
     if (
         hostname === "na.realauad.com" ||
         hostname === "eu.realauad.com" ||
         hostname === "178.156.171.131" ||
         hostname === "46.62.194.17"
     ) {
-        url.protocol = "wss:"; // WebSocket seguro
-        url.hostname = SERVER_HOST;
-        url.port = "";
-        // La ruta para el WebSocket del juego suele ser la raíz "/"
-        // Asegúrate de que no se añada ningún prefijo no deseado.
-        if (url.pathname === "/") {
-            // No hacer nada, la raíz es correcta
-        } else {
-            // Si el cliente intenta una ruta específica, se conserva.
-        }
-        return url.href;
-    }
-
-    // 2. Redirigir las llamadas a la API (HTTP) a Render
-    if (
-        hostname === "api.realauad.com" ||
-        pathname.startsWith("/account/") ||
-        pathname.startsWith("/api/") // Asegura que las rutas /api también se redirijan
-    ) {
-        url.protocol = "https:"; // ¡CORRECCIÓN CLAVE! HTTP seguro, no WebSocket.
+        url.protocol = "wss:";
         url.hostname = SERVER_HOST;
         url.port = "";
         return url.href;
     }
 
-    // Para cualquier otra URL, no hacer nada.
     return raw;
 }
 
