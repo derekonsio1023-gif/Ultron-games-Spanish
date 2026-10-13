@@ -261,31 +261,42 @@ function rewriteServerUrl(raw) {
     const pathname = url.pathname;
 
     // 1. PRIMERO: llamadas API → siempre HTTPS
-    if (
-        hostname === "api.realauad.com" ||
-        pathname.startsWith("/account/") ||
-        pathname.startsWith("/api/")
-    ) {
-        url.protocol = "https:";
-        url.hostname = SERVER_HOST;
-        url.port = "";
-        return url.href;
-    }
+    // Lista de endpoints de la API (REST)
+const API_PATHS = [
+    "/api/",
+    "/account/",
+    "/lobbies",
+    "/auto",
+    "/presence",
+    "/events",
+    "/latest"
+];
 
-    // 2. DESPUÉS: conexiones de juego → WebSocket seguro
-    if (
-        hostname === "na.realauad.com" ||
-        hostname === "eu.realauad.com" ||
-        hostname === "178.156.171.131" ||
-        hostname === "46.62.194.17"
-    ) {
-        url.protocol = "wss:";
-        url.hostname = SERVER_HOST;
-        url.port = "";
-        return url.href;
-    }
+// 1. PRIMERO: llamadas API → siempre HTTPS
+if (
+    hostname === "api.realauad.com" ||
+    API_PATHS.some(p => pathname.startsWith(p))
+) {
+    url.protocol = "https:";
+    url.hostname = SERVER_HOST;
+    url.port = "";
+    return url.href;
+}
 
-    return raw;
+// 2. DESPUÉS: conexiones de juego → WebSocket seguro
+if (
+    hostname === "na.realauad.com" ||
+    hostname === "eu.realauad.com" ||
+    hostname === "178.156.171.131" ||
+    hostname === "46.62.194.17"
+) {
+    url.protocol = "wss:";
+    url.hostname = SERVER_HOST;
+    url.port = "";
+    return url.href;
+}
+
+return raw;
 }
 
 
