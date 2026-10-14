@@ -260,11 +260,13 @@
                 StartUnityInstance();
         }
 
+// [FIX Opción A] IsLocalHost() ya no aborta cuando estamos dentro de un iframe.
+// Antes: `if (window.top !== window) return false;` bloqueaba también el caso
+// "githack dentro de Ultron" (iframe, pero NO Yandex). Ahora simplemente
+// comprobamos el hostname, así el iframe de Ultron se reconoce como dev host.
 function IsLocalHost() {
     try {
-        if (window.top !== window) return false;
-
-        const host = window.location.hostname;
+        const host = window.location.hostname || '';
 
         // Hostings de desarrollo / pruebas
         if (host === "localhost" ||
