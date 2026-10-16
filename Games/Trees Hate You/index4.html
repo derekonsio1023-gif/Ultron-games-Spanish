@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Cargando…</title>
+<style>html,body{margin:0;height:100%;overflow:hidden;background:#000}</style>
+</head>
+<body>
+<script>
+const ENTRY = 'index.html';
+const GAME_URL = new URL(ENTRY, location.href).href;
+const BASE_DIR = GAME_URL.replace(/[^/]*$/, '');
+const REMOTE_BASE = 'https://cdn.jsdelivr.net/gh/thirstygithub/fugglelatougin@main/';
+
+// Proxy que NO envía Content-Encoding → el juego recibe bytes crudos
+const BROTLI_PROXY = 'https://api.allorigins.win/raw?url=';
+
+function ULTRON_BROTLI_FIX() {
+  try {
+    console.log('[LOADER] Aplicando fix de Brotli…');
+    const _fetch = window.fetch;
+
+    window.fetch = function (input, init) {
+      const raw = typeof input === 'string' ? input : (input && input.url) || '';
+
+      // Solo tocamos los .br del juego (los .partX)
+      if (/\.br\.part\d+($|\?)/i.test(raw)) {
+        // Redirigir vía proxy que no añade Content-Encoding
+        const proxied = BROTLI_PROXY + encodeURIComponent(raw);
+        console.log('[LOADER] .br vía proxy:', raw);
+        return _fetch.call(this, proxied, init);
+      }
+
+      return _fetch.call(this, input, init);
+    };
+
+    console.log('[LOADER] Fix de Brotli aplicado.');
+  } catch (e) {
+    console.error('[LOADER] Error:', e);
+  }
+}
+
+(function () {
+  const LT = String.fromCharCode(60);
+  const GT = String.fromCharCode(62);
+  const SL = String.fromCharCode(47);
+  const EC = LT + SL + 'script' + GT;
+
+  const SHIM_SOURCE = '(' + ULTRON_BROTLI_FIX.toString() + ')();';
+  const SHIM_URL = URL.createObjectURL(
+    new Blob([SHIM_SOURCE], { type: 'application/javascript' })
+  );
+  const SHIM_TAG = LT + 'script src="' + SHIM_URL + '"' + GT + EC;
+
+  console.log('[LOADER] Cargando', GAME_URL);
+
+  fetch(GAME_URL)
+    .then(r => r.text())
+    .then(html => {
+      // ❌ QUITADO: el <base href> que rompía el WASM
+
+      let injected = false;
+      const tryAt = (re, after) => {
+        if (injected) return;
+        const m = re.exec(html);
+        if (!m) return;
+        const pos = after ? m.index + m[0].length : m.index;
+        html = html.slice(0, pos) + SHIM_TAG + html.slice(pos);
+        injected = true;
+      };
+      tryAt(/<script\b/i, false);
+      tryAt(/<\/head\s*>/i, false);
+      tryAt(/<body\b/i, false);
+      if (!injected) html = SHIM_TAG + html;
+
+      console.log('[LOADER] Inyectado:', injected);
+
+      document.open();
+      document.write(html);
+      document.close();
+    })
+    .catch(e => {
+      console.error('[LOADER] Error fatal:', e);
+      document.body.innerHTML = 'Error: ' + (e && e.message ? e.message : e);
+    });
+})();
+</script>
+</body>
+</html>
