@@ -7,34 +7,41 @@
 </head>
 <body>
 <script>
-// ══════════════════════════════════════════════════════════════════
-//  El juego se cargará con las cabeceras correctas para evitar
-//  la doble descompresión de Brotli.
-// ══════════════════════════════════════════════════════════════════
-const ENTRY = 'index.html'; // Nombre del archivo HTML del juego
+const ENTRY = 'index.html';
 const GAME_URL = new URL(ENTRY, location.href).href;
 const BASE_DIR = GAME_URL.replace(/[^/]*$/, '');
 
-// ══════════════════════════════════════════════════════════════════
-//  SHIM: Intercepta fetch para evitar la descompresión automática
-// ══════════════════════════════════════════════════════════════════
+// URL base remota que usa el juego (jsDelivr)
+const REMOTE_BASE = 'https://cdn.jsdelivr.net/gh/thirstygithub/fugglelatougin@main/';
+// URL base local en tu repositorio (githack)
+const LOCAL_BASE = BASE_DIR; // Ej: https://raw.githack.com/.../Trees%20Hate%20You/
+
 function ULTRON_BROTLI_FIX() {
   try {
     console.log('[LOADER] Aplicando fix de Brotli...');
     const _fetch = window.fetch;
 
     window.fetch = function(input, init) {
-      const url = typeof input === 'string' ? input : (input && input.url) || '';
-      // Si es un archivo .br, forzamos al navegador a que NO lo descomprima.
+      let url = typeof input === 'string' ? input : (input && input.url) || '';
+
+      // Reescribir URLs de jsDelivr a local
+      if (url.startsWith('https://cdn.jsdelivr.net/gh/thirstygithub/fugglelatougin@main/')) {
+        url = url.replace('https://cdn.jsdelivr.net/gh/thirstygithub/fugglelatougin@main/', LOCAL_BASE);
+        console.log('[LOADER] URL reescrita a local:', url);
+      }
+
+      // Forzar que no se descomprima (aunque el navegador lo ignora, se mantiene por si acaso)
       if (/\.br(\.part\d+)?($|\?)/i.test(url)) {
         init = init || {};
         init.headers = new Headers(init.headers || {});
         init.headers.set('Accept-Encoding', 'identity');
         console.log('[LOADER] Fetch interceptado (sin descompresión):', url);
       }
-      return _fetch.call(this, input, init).then(function(response) {
-        // Opcional: Eliminar la cabecera Content-Encoding de la respuesta
-        // para asegurar que el cuerpo no se descomprima.
+
+      // Usar la URL reescrita
+      const newInput = typeof input === 'string' ? url : new Request(url, input);
+
+      return _fetch.call(this, newInput, init).then(function(response) {
         if (/\.br(\.part\d+)?($|\?)/i.test(url) && response.ok) {
           const newHeaders = new Headers(response.headers);
           newHeaders.delete('Content-Encoding');
@@ -53,17 +60,13 @@ function ULTRON_BROTLI_FIX() {
   }
 }
 
-// ══════════════════════════════════════════════════════════════════
-//  Cargador: fetch → modificar HTML → document.write
-// ══════════════════════════════════════════════════════════════════
+// El resto del loader (inyección del shim, fetch del index.html, etc.) permanece igual
 (function() {
   const LT = String.fromCharCode(60);
   const GT = String.fromCharCode(62);
   const SL = String.fromCharCode(47);
   const EC = LT + SL + 'script' + GT;
 
-  // Creamos un tag <script> que apunta a una URL de Blob con nuestro shim.
-  // Esto evita problemas con la CSP (Content Security Policy) inline.
   const SHIM_SOURCE = '(' + ULTRON_BROTLI_FIX.toString() + ')();';
   const SHIM_BLOB = new Blob([SHIM_SOURCE], { type: 'application/javascript' });
   const SHIM_URL = URL.createObjectURL(SHIM_BLOB);
@@ -74,10 +77,8 @@ function ULTRON_BROTLI_FIX() {
   fetch(GAME_URL)
     .then(r => r.text())
     .then(html => {
-      // 1. Insertamos <base href> para que las rutas relativas funcionen.
       html = html.replace(/<head([^>]*)>/i, '<head$1><base href="' + BASE_DIR + '">');
 
-      // 2. Inyectamos nuestro script de corrección ANTES de cualquier otro script del juego.
       let injected = false;
       const tryAt = (re, after) => {
         if (injected) return;
@@ -88,14 +89,13 @@ function ULTRON_BROTLI_FIX() {
         injected = true;
       };
 
-      tryAt(/<script\b/i, false);          // Antes del primer <script>
-      tryAt(/<\/head\s*>/i, false);        // Antes de </head>
-      tryAt(/<body\b/i, false);            // Antes de <body>
-      if (!injected) html = SHIM_TAG + html; // Último recurso
+      tryAt(/<script\b/i, false);
+      tryAt(/<\/head\s*>/i, false);
+      tryAt(/<body\b/i, false);
+      if (!injected) html = SHIM_TAG + html;
 
       console.log('[LOADER] Inyectado:', injected);
 
-      // 3. Reescribimos el documento con el HTML modificado.
       document.open();
       document.write(html);
       document.close();
