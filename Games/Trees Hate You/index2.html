@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Cargando…</title>
+<style>html,body{margin:0;height:100%;overflow:hidden;background:#000}</style>
+</head>
+<body>
+<script>
+// ══════════════════════════════════════════════════════════════════
+//  El juego se cargará con las cabeceras correctas para evitar
+//  la doble descompresión de Brotli.
+// ══════════════════════════════════════════════════════════════════
+const ENTRY = 'index.html'; // Nombre del archivo HTML del juego
+const GAME_URL = new URL(ENTRY, location.href).href;
+const BASE_DIR = GAME_URL.replace(/[^/]*$/, '');
+
+// ══════════════════════════════════════════════════════════════════
+//  SHIM: Intercepta fetch para evitar la descompresión automática
+// ══════════════════════════════════════════════════════════════════
+function ULTRON_BROTLI_FIX() {
+  try {
+    console.log('[LOADER] Aplicando fix de Brotli...');
+    const _fetch = window.fetch;
+
+    window.fetch = function(input, init) {
+      const url = typeof input === 'string' ? input : (input && input.url) || '';
+      // Si es un archivo .br, forzamos al navegador a que NO lo descomprima.
+      if (/\.br(\.part\d+)?($|\?)/i.test(url)) {
+        init = init || {};
+        init.headers = new Headers(init.headers || {});
+        init.headers.set('Accept-Encoding', 'identity');
+        console.log('[LOADER] Fetch interceptado (sin descompresión):', url);
+      }
+      return _fetch.call(this, input, init).then(function(response) {
+        // Opcional: Eliminar la cabecera Content-Encoding de la respuesta
+        // para asegurar que el cuerpo no se descomprima.
+        if (/\.br(\.part\d+)?($|\?)/i.test(url) && response.ok) {
+          const newHeaders = new Headers(response.headers);
+          newHeaders.delete('Content-Encoding');
+          return new Response(response.body, {
+            status: response.status,
+            statusText: response.statusText,
+            headers: newHeaders
+          });
+        }
+        return response;
+      });
+    };
+    console.log('[LOADER] Fix de Brotli aplicado correctamente.');
+  } catch (e) {
+    console.error('[LOADER] Error aplicando el fix de Brotli:', e);
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════
+//  Cargador: fetch → modificar HTML → document.write
+// ══════════════════════════════════════════════════════════════════
+(function() {
+  const LT = String.fromCharCode(60);
+  const GT = String.fromCharCode(62);
+  const SL = String.fromCharCode(47);
+  const EC = LT + SL + 'script' + GT;
+
+  // Creamos un tag <script> que apunta a una URL de Blob con nuestro shim.
+  // Esto evita problemas con la CSP (Content Security Policy) inline.
+  const SHIM_SOURCE = '(' + ULTRON_BROTLI_FIX.toString() + ')();';
+  const SHIM_BLOB = new Blob([SHIM_SOURCE], { type: 'application/javascript' });
+  const SHIM_URL = URL.createObjectURL(SHIM_BLOB);
+  const SHIM_TAG = LT + 'script src="' + SHIM_URL + '"' + GT + EC;
+
+  console.log('[LOADER] Cargando', GAME_URL);
+
+  fetch(GAME_URL)
+    .then(r => r.text())
+    .then(html => {
+      // 1. Insertamos <base href> para que las rutas relativas funcionen.
+      html = html.replace(/<head([^>]*)>/i, '<head$1><base href="' + BASE_DIR + '">');
+
+      // 2. Inyectamos nuestro script de corrección ANTES de cualquier otro script del juego.
+      let injected = false;
+      const tryAt = (re, after) => {
+        if (injected) return;
+        const m = re.exec(html);
+        if (!m) return;
+        const pos = after ? m.index + m[0].length : m.index;
+        html = html.slice(0, pos) + SHIM_TAG + html.slice(pos);
+        injected = true;
+      };
+
+      tryAt(/<script\b/i, false);          // Antes del primer <script>
+      tryAt(/<\/head\s*>/i, false);        // Antes de </head>
+      tryAt(/<body\b/i, false);            // Antes de <body>
+      if (!injected) html = SHIM_TAG + html; // Último recurso
+
+      console.log('[LOADER] Inyectado:', injected);
+
+      // 3. Reescribimos el documento con el HTML modificado.
+      document.open();
+      document.write(html);
+      document.close();
+    })
+    .catch(e => {
+      console.error('[LOADER] Error fatal:', e);
+      document.body.innerHTML = 'Error: ' + (e && e.message ? e.message : e);
+    });
+})();
+</script>
+</body>
+</html>
