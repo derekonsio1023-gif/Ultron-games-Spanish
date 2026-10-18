@@ -91,12 +91,14 @@
 
     try {
         app = new pc.Application(canvas, {
-            keyboard: devices.keyboard,
-            mouse: devices.mouse,
-            gamepads: devices.gamepads,
-            touch: devices.touch,
-            graphicsDeviceOptions: CONTEXT_OPTIONS
-        });
+    keyboard: devices.keyboard,
+    mouse: devices.mouse,
+    gamepads: devices.gamepads,
+    touch: devices.touch,
+    graphicsDeviceOptions: CONTEXT_OPTIONS
+});
+
+app.loader.crossOrigin = 'anonymous';
     } catch (e) {
         if (e instanceof pc.UnsupportedBrowserError) {
             displayError('This page requires a browser that supports WebGL.<br/>' +
