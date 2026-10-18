@@ -1,45 +1,48 @@
 <!DOCTYPE html>
-<html lang="en-us">
-  <head>
-    <meta charset="utf-8">
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <title>Unity WebGL Player | OVENLESS BROWNIES</title>
-    
-    <style>
-      /* 1. Quita márgenes, rellenos y las barras de scroll (flechas) */
-      html, body {
-        margin: 0;
-        padding: 0;
-        width: 100%;
-        height: 100%;
-        overflow: hidden; /* Esto elimina las flechas por completo */
-        background-color: #231F20; /* Color de fondo oscuro */
-      }
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>OVENLESS BROWNIES</title>
 
-      /* 2. Hace que el contenedor de Unity ocupe el 100% de la ventana */
-      #unityContainer {
-        width: 100%;
-        height: 100%;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-      }
+  <style>
+    /* Reseteamos márgenes para que no haya bordes blancos */
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden; /* Evita las flechas de scroll */
+      background-color: #000; /* Fondo negro por si tarda en cargar */
+    }
 
-      /* 3. Fuerza al canvas que genera Unity a ajustarse a la pantalla */
-      canvas {
-        width: 100%;
-        height: 100%;
-        display: block;
-      }
-    </style>
+    /* El contenedor de Unity ocupa toda la ventana */
+    #unityContainer {
+      width: 100vw;
+      height: 100vh;
+      display: block;
+    }
 
-    <script src="Build/UnityLoader.js"></script>
-    <script>
-      UnityLoader.instantiate("unityContainer", "Build/OBWEB2.json");
-    </script>
-  </head>
-  <body>
-    <!-- Quitamos el style en línea porque ahora lo controla el CSS de arriba -->
-    <div id="unityContainer"></div>
-  </body>
+    /* Forzamos al canvas interno de Unity a estirarse */
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Contenedor donde Unity inyectará el juego -->
+  <div id="unityContainer"></div>
+
+  <!-- Cargamos el motor de Unity -->
+  <script src="Build/UnityLoader.js"></script>
+  
+  <!-- Iniciamos el juego directamente -->
+  <script>
+    UnityLoader.instantiate("unityContainer", "Build/OBWEB2.json");
+  </script>
+</body>
 </html>
