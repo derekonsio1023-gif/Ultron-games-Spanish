@@ -122,18 +122,24 @@
         window.addEventListener('resize', reflow, false);
         window.addEventListener('orientationchange', reflow, false);
 
-        app.preload(function (err) {
-            if (err) {
-                console.error(err);
-            }
+        
+app.preload(function (err) {
+    if (err) {
+        console.error("[PRELOAD] Error al cargar recursos:", err);
+    } else {
+        console.log("[PRELOAD] Recursos precargados.");
+    }
 
-            app.loadScene(SCENE_PATH, function (err, scene) {
-                if (err) {
-                    console.error(err);
-                }
+    app.loadScene(SCENE_PATH, function (err, scene) {
+        if (err) {
+            console.error("[SCENE] Error al cargar la escena:", err);
+        } else {
+            console.log("[SCENE] Escena cargada:", SCENE_PATH);
+        }
 
-                app.start();
-            });
-        });
+        app.start();
+    });
+});
+
     });
 }());
