@@ -91,12 +91,14 @@
 
     try {
         app = new pc.Application(canvas, {
-            keyboard: devices.keyboard,
-            mouse: devices.mouse,
-            gamepads: devices.gamepads,
-            touch: devices.touch,
-            graphicsDeviceOptions: CONTEXT_OPTIONS
-        });
+    keyboard: devices.keyboard,
+    mouse: devices.mouse,
+    gamepads: devices.gamepads,
+    touch: devices.touch,
+    graphicsDeviceOptions: CONTEXT_OPTIONS
+});
+
+app.loader.crossOrigin = 'anonymous';
     } catch (e) {
         if (e instanceof pc.UnsupportedBrowserError) {
             displayError('This page requires a browser that supports WebGL.<br/>' +
@@ -122,18 +124,24 @@
         window.addEventListener('resize', reflow, false);
         window.addEventListener('orientationchange', reflow, false);
 
-        app.preload(function (err) {
-            if (err) {
-                console.error(err);
-            }
+        
+app.preload(function (err) {
+    if (err) {
+        console.error("[PRELOAD] Error al cargar recursos:", err);
+    } else {
+        console.log("[PRELOAD] Recursos precargados.");
+    }
 
-            app.loadScene(SCENE_PATH, function (err, scene) {
-                if (err) {
-                    console.error(err);
-                }
+    app.loadScene(SCENE_PATH, function (err, scene) {
+        if (err) {
+            console.error("[SCENE] Error al cargar la escena:", err);
+        } else {
+            console.log("[SCENE] Escena cargada:", SCENE_PATH);
+        }
 
-                app.start();
-            });
-        });
+        app.start();
+    });
+});
+
     });
 }());

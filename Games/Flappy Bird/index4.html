@@ -1,0 +1,46 @@
+
+<!doctype html>
+<html lang="es">
+<head>
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no">
+    <meta charset="utf-8">
+    <title>Flappy Bird</title>
+
+    <link rel="stylesheet" href="styles.css">
+
+    <script src="playcanvas-stable.min.js"></script>
+
+    <script>
+        SCENE_PATH = "404993.json";
+
+        CONTEXT_OPTIONS = {
+            alpha: false,
+            preserveDrawingBuffer: false
+        };
+
+        // Diagnóstico: registra errores de carga de recursos.
+        window.addEventListener("error", function (event) {
+            console.error(
+                "[Diagnóstico del juego]",
+                event.message || "Error de recurso",
+                event.filename || "",
+                event.target && event.target.src
+                    ? event.target.src
+                    : ""
+            );
+        }, true);
+
+        window.addEventListener("unhandledrejection", function (event) {
+            console.error(
+                "[Diagnóstico del juego] Promesa rechazada:",
+                event.reason
+            );
+        });
+    </script>
+</head>
+<body>
+    <script src="__start__3.js"></script>
+    <script src="__loading__.js"></script>
+</body>
+</html>
