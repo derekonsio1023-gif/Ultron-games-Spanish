@@ -357,7 +357,8 @@
 
 <div id="game-runtime">
     <div id="game-frame-wrap">
-        <iframe id="game-frame" allow="camera *; microphone *; autoplay; fullscreen; gamepad" allowfullscreen loading="eager" referrerpolicy="no-referrer"></iframe>
+        <!-- Quitado 'allowfullscreen' porque 'allow="...fullscreen"' ya lo incluye, y evitamos el warning -->
+        <iframe id="game-frame" allow="camera *; microphone *; autoplay; fullscreen; gamepad" loading="eager" referrerpolicy="no-referrer"></iframe>
     </div>
     <div id="game-info-panel">
         <div class="gip-user-block">
@@ -391,7 +392,9 @@
     // ══════════════════════════════════════════════════════════════
     const LOGO_HEADER_URL = 'https://raw.githack.com/derekonsio1023-gif/Ultron-games/main/assets/UltronT.png';
     const LOGO_LOADING_URL = 'https://raw.githack.com/derekonsio1023-gif/Ultron-games/main/assets/logo.png';
-    const JUEGOS_JSON_URL = 'juegos.json'; // El archivo externo
+    
+    // 👇 AQUÍ ESTÁ LA CORRECCIÓN: Usamos la URL completa de githack
+    const JUEGOS_JSON_URL = 'https://raw.githack.com/derekonsio1023-gif/Ultron-games/main/juegos.json';
 
     const _db = 'ultron-bd064-default-rtdb.europe-west1.firebasedatabase';
     const _getDB = () => `https://${_db}.app`;
@@ -408,13 +411,11 @@
     let currentGameParsedUrl = null;
     let _searchDebounce = null;
 
-    // Estado del carrusel
     let carruselIndex = 0;
     let carruselJuegos = [];
-    const CARRUSEL_MAX = 10; // Solo 10 portadas
+    const CARRUSEL_MAX = 10;
 
-    // Preferencias
-    let cardStyle = 'ultron'; // 'ultron' o 'poki'
+    let cardStyle = 'ultron';
 
     // ══════════════════════════════════════════════════════════════
     // CARGA DE DATOS (JSON)
@@ -528,7 +529,6 @@
         const card = document.createElement('div');
         card.className = 'cover-card';
         const titulo = game?.titulo || 'Próximamente';
-        // Usa img_cover si existe, si no, usa img
         const bgImg = game?.img_cover || game?.img || '';
         const thumbImg = game?.img || bgImg;
 
