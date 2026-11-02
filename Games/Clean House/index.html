@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Juego Web Local</title>
+    <style>
+        body { margin: 0; background-color: #000; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; font-family: sans-serif; color: #fff; }
+        #unity-container { width: 100%; height: 100%; max-width: 960px; max-height: 600px; position: relative; }
+        canvas { width: 100%; height: 100%; background: #231f20; }
+        #unity-loading-bar { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); display: none; }
+        #unity-progress-bar-empty { width: 141px; height: 18px; background: #fff; border-radius: 10px; padding: 2px; }
+        #unity-progress-bar-full { width: 0%; height: 100%; background: #24af24; border-radius: 10px; }
+    </style>
+</head>
+<body>
+
+    <!-- 🧱 ESTRUCTURA DE LA PANTALLA -->
+    <div id="unity-container">
+        <canvas id="unity-canvas"></canvas>
+        <div id="unity-loading-bar">
+            <div id="unity-progress-bar-empty">
+                <div id="unity-progress-bar-full"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // === 🛡️ CLON ORIGINAL DEL SDK DE POKI ===
+        // Le responde al motor de Unity de forma asíncrona simulando una conexión perfecta a internet
+        window.initPokiBridge = function(instanceName) {
+            console.log("🤖 [Unity 6000] ¡Puente de Poki simulado con éxito!", instanceName);
+            
+            // Simular la inicialización completa del SDK
+            setTimeout(() => {
+                console.log("🎯 [Poki Bridge] Simulando inicialización completada");
+                
+                // Intentar notificar a Unity que el SDK está listo
+                if (window.SDKReady) {
+                    window.SDKReady();
+                }
+                
+                // Intentar también notificar mediante el objeto Unity si existe
+                if (window.unityInstance && window.unityInstance.SendMessage) {
+                    try {
+                        window.unityInstance.SendMessage('(singleton) PokiUnitySDK', 'ready');
+                        console.log("📤 [Poki Bridge] Mensaje 'ready' enviado a Unity");
+                    } catch (e) {
+                        console.log("⚠️ [Poki Bridge] No se pudo enviar mensaje 'ready' a Unity:", e);
+                    }
+                }
+            }, 500);
+            
+            return Promise.resolve({
+                gameplayStart: function() {},
+                gameplayStop: function() {},
+                commercialBreak: function() { return Promise.resolve(); },
+                rewardedBreak: function() { return Promise.resolve(true); },
+                displayAd: function() { return Promise.resolve(); },
+                destroyAd: function() { return Promise.resolve(); },
+                gameLoadingStart: function() {},
+                gameLoadingFinished: function() {}
+            });
+        };
+
+        window.PokiSDK = {
+            init: function() { 
+                console.log("🎮 [Poki SDK] init llamado");
+                return Promise.resolve(true); 
+            },
+            gameplayStart: function() { 
+                console.log("🎮 [Poki SDK] gameplayStart llamado");
+            },
+            gameplayStop: function() { 
+                console.log("🎮 [Poki SDK] gameplayStop llamado");
+            },
+            commercialBreak: function() { 
+                console.log("📺 [Poki SDK] commercialBreak llamado - completado inmediatamente");
+                // Llamar al callback de completado inmediatamente
+                if (window.commercialBreakCompleted) {
+                    window.commercialBreakCompleted();
+                }
+                return Promise.resolve(); 
+            },
+            rewardedBreak: function() { 
+                console.log("🎁 [Poki SDK] rewardedBreak llamado - recompensa dada inmediatamente");
+                // Llamar al callback con recompensa true inmediatamente
+                if (window.rewardedBreakCompleted) {
+                    window.rewardedBreakCompleted(true);
+                }
+                return Promise.resolve(true); 
+            },
+            isAdBlocked: function() { 
+                console.log("🛡️ [Poki SDK] isAdBlocked llamado");
+                return false; 
+            },
+            getURLParam: function() { 
+                console.log("🔗 [Poki SDK] getURLParam llamado");
+                return ""; 
+            },
+            gameLoadingStart: function() { 
+                console.log("📥 [Poki SDK] gameLoadingStart llamado");
+            },
+            gameLoadingFinished: function() { 
+                console.log("✅ [Poki SDK] gameLoadingFinished llamado");
+            },
+            logError: function() { 
+                console.log("❌ [Poki SDK] logError llamado");
+            },
+            measure: function() { 
+                console.log("📊 [Poki SDK] measure llamado");
+            },
+            customEvent: function() {
+                console.log("🎯 [Poki SDK] customEvent llamado");
+            },
+            openExternalLink: function() {
+                console.log("🔗 [Poki SDK] openExternalLink llamado");
+            },
+            getLanguage: function() {
+                console.log("🌐 [Poki SDK] getLanguage llamado");
+                return "es";
+            },
+            shareableURL: function() {
+                console.log("🔗 [Poki SDK] shareableURL llamado");
+                return Promise.resolve("https://example.com");
+            },
+            movePill: function() {
+                console.log("💊 [Poki SDK] movePill llamado");
+            },
+            displayAd: function() {
+                console.log("📺 [Poki SDK] displayAd llamado");
+                return Promise.resolve();
+            },
+            destroyAd: function() {
+                console.log("🗑️ [Poki SDK] destroyAd llamado");
+                return Promise.resolve();
+            }
+        };
+
+        // === 🔧 INTERCEPTAR WEBSOCKET PARA EVITAR CONEXIONES PENDIENTES ===
+        // Unity WebGL intenta conectar WebSocket para desarrollo; esto lo intercepta
+        (function() {
+            const OriginalWebSocket = window.WebSocket;
+            window.WebSocket = function(url, protocols) {
+                console.log("🔌 [WebSocket] Interceptando conexión a:", url);
+                
+                // Retornar un WebSocket mock que parece conectado
+                const mockWebSocket = {
+                    url: url,
+                    readyState: 1, // OPEN
+                    protocol: "",
+                    extensions: "",
+                    bufferedAmount: 0,
+                    binaryType: "blob",
+                    onopen: null,
+                    onerror: null,
+                    onmessage: null,
+                    onclose: null,
+                    
+                    send: function(data) {
+                        console.log("📤 [WebSocket Mock] Datos enviados (simulado)");
+                    },
+                    
+                    close: function() {
+                        console.log("🔌 [WebSocket Mock] Conexión cerrada (simulado)");
+                        if (this.onclose) {
+                            this.onclose({ wasClean: true, code: 1000, reason: "" });
+                        }
+                    },
+                    
+                    addEventListener: function(type, listener) {
+                        console.log("🎧 [WebSocket Mock] Event listener añadido:", type);
+                        if (type === 'open') {
+                            setTimeout(() => listener({ type: 'open' }), 10);
+                        }
+                    },
+                    
+                    removeEventListener: function(type, listener) {
+                        console.log("🗑️ [WebSocket Mock] Event listener removido:", type);
+                    }
+                };
+                
+                // Simular conexión exitosa después de un breve delay
+                setTimeout(() => {
+                    console.log("✅ [WebSocket Mock] Conexión simulada exitosa");
+                    if (mockWebSocket.onopen) {
+                        mockWebSocket.onopen({ type: 'open' });
+                    }
+                }, 50);
+                
+                return mockWebSocket;
+            };
+            
+            // Copiar propiedades estáticas
+            window.WebSocket.CONNECTING = 0;
+            window.WebSocket.OPEN = 1;
+            window.WebSocket.CLOSING = 2;
+            window.WebSocket.CLOSED = 3;
+            
+            console.log("🛡️ [WebSocket] Interceptor activado - conexiones WS serán simuladas");
+        })();
+
+        // === 🔧 CALLBACKS DEL SDK DE POKI QUE UNITY ESPERA ===
+        // Estas funciones son llamadas por el jslib para notificar a Unity
+        window.SDKReady = function() {
+            console.log("🎮 [Poki SDK] SDK Ready callback llamado");
+        };
+        
+        // Funciones adicionales que el jslib podría usar
+        window.PokiSDK_Bridge_Ready = function() {
+            console.log("🎮 [Poki SDK Bridge] Bridge Ready callback llamado");
+        };
+        
+        window.PokiSDK_Ready = function() {
+            console.log("🎮 [Poki SDK] SDK Ready callback alternativo llamado");
+        };
+        
+        // Función para simular la llamada desde el jslib cuando Unity inicializa el puente
+        window.PokiSDK_init = function() {
+            console.log("🎮 [Poki SDK] Init callback llamado");
+        };
+        
+        // === 🔧 FUNCIONES GLOBALES QUE EL JSLIB ESPERA ===
+        // Estas funciones son llamadas directamente por el jslib de Poki
+        
+        window.commercialBreak = function() {
+            console.log("📺 [Global] commercialBreak llamado - completado inmediatamente");
+            if (window.commercialBreakCompleted) {
+                window.commercialBreakCompleted();
+            }
+        };
+        
+        window.rewardedBreak = function(options) {
+            console.log("🎁 [Global] rewardedBreak llamado - recompensa dada inmediatamente", options);
+            if (window.rewardedBreakCompleted) {
+                window.rewardedBreakCompleted(true);
+            }
+        };
+        
+        window.shareableURL = function(params) {
+            console.log("🔗 [Global] shareableURL llamado", params);
+            if (window.shareableURLResolved) {
+                setTimeout(() => window.shareableURLResolved("https://example.com/shared"), 100);
+            }
+        };
+        
+        window.getUser = function() {
+            console.log("👤 [Global] getUser llamado");
+            if (window.getUserResolved) {
+                setTimeout(() => window.getUserResolved(JSON.stringify({username: "test_user", avatarUrl: ""})), 100);
+            }
+        };
+        
+        window.getToken = function() {
+            console.log("🔑 [Global] getToken llamado");
+            if (window.getTokenResolved) {
+                setTimeout(() => window.getTokenResolved("test_token_123"), 100);
+            }
+        };
+        
+        window.login = function() {
+            console.log("🔐 [Global] login llamado");
+            if (window.loginResolved) {
+                setTimeout(() => window.loginResolved(), 100);
+            }
+        };
+        
+        window.commercialBreakCompleted = function() {
+            console.log("📺 [Poki SDK] Commercial break completado");
+        };
+        
+        window.rewardedBreakCompleted = function(withReward) {
+            console.log("🎁 [Poki SDK] Rewarded break completado, reward:", withReward);
+        };
+        
+        window.shareableURLResolved = function(url) {
+            console.log("🔗 [Poki SDK] Shareable URL resuelta:", url);
+        };
+        
+        window.shareableURLRejected = function() {
+            console.log("❌ [Poki SDK] Shareable URL rechazada");
+        };
+        
+        window.getUserResolved = function(userJson) {
+            console.log("👤 [Poki SDK] User resuelto:", userJson);
+        };
+        
+        window.getUserRejected = function() {
+            console.log("❌ [Poki SDK] User rechazado");
+        };
+        
+        window.getTokenResolved = function(token) {
+            console.log("🔑 [Poki SDK] Token resuelto:", token);
+        };
+        
+        window.getTokenRejected = function() {
+            console.log("❌ [Poki SDK] Token rechazado");
+        };
+        
+        window.loginResolved = function() {
+            console.log("✅ [Poki SDK] Login resuelto");
+        };
+        
+        window.loginRejected = function() {
+            console.log("❌ [Poki SDK] Login rechazado");
+        };
+        
+        window.iapInit = function() {
+            console.log("💳 [Poki SDK] IAP init");
+        };
+        
+        window.iapPurchase = function(productJson) {
+            console.log("💰 [Poki SDK] IAP purchase:", productJson);
+        };
+        
+        window.iapConsume = function(productJson) {
+            console.log("🛒 [Poki SDK] IAP consume:", productJson);
+        };
+        
+        console.log("🎯 [Poki SDK] Todos los callbacks globales han sido registrados");
+        
+        // 🔧 INICIAR AUDIO CONTEXT INMEDIATAMENTE AL CARGAR LA PÁGINA
+        function initAudioContext() {
+            try {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (AudioContext) {
+                    const audioContext = new AudioContext();
+                    if (audioContext.state === 'suspended') {
+                        audioContext.resume().then(() => {
+                            console.log("🔊 AudioContext inicializado y resumido");
+                        }).catch(e => {
+                            console.log("⚠️ No se pudo resumir AudioContext inicial:", e);
+                        });
+                    } else {
+                        console.log("🔊 AudioContext ya está activo");
+                    }
+                    window.globalAudioContext = audioContext;
+                }
+            } catch (e) {
+                console.log("⚠️ Error al inicializar AudioContext:", e);
+            }
+        }
+        
+        // Iniciar audio al cargar la página
+        if (document.readyState === 'complete') {
+            initAudioContext();
+        } else {
+            window.addEventListener('load', initAudioContext);
+        }
+        
+        // También intentar con interacciones del usuario
+        document.addEventListener('click', function() {
+            initAudioContext();
+            // También intentar forzar audio de Unity
+            if (window.unityInstance && window.unityInstance.Module) {
+                const audioContext = window.unityInstance.Module.audioContext || 
+                                    (window.AudioContext ? new window.AudioContext() : null);
+                if (audioContext && audioContext.state === 'suspended') {
+                    audioContext.resume().then(() => {
+                        console.log("🔊 AudioContext de Unity resumido por clic");
+                    });
+                }
+            }
+        }, { once: true });
+        
+        document.addEventListener('keydown', initAudioContext, { once: true });
+        document.addEventListener('touchstart', initAudioContext, { once: true });
+        
+        // Mostrar mensaje sobre el audio
+        console.log("🔊 Si el audio no funciona, haz clic en el botón 'ACTIVAR AUDIO' en la esquina superior derecha");
+    </script>
+
+    <!-- 1. Cargador de Unity -->
+    <script src="loader.js"></script>
+
+    <script>
+        var container = document.querySelector("#unity-container");
+        var canvas = document.querySelector("#unity-canvas");
+        var loadingBar = document.querySelector("#unity-loading-bar");
+        var progressBarFull = document.querySelector("#unity-progress-bar-full");
+
+        function unityShowBanner(msg, type) {
+            console.log("Aviso de Unity:", msg);
+        }
+        
+        // 🔧 FUNCIÓN PARA FORZAR AUDIO DE UNITY
+        window.forceAudioEnable = function() {
+            console.log("🔊 Forzando activación de audio");
+            
+            // 1. Activar AudioContext global
+            if (window.globalAudioContext && window.globalAudioContext.state === 'suspended') {
+                window.globalAudioContext.resume().then(() => {
+                    console.log("🔊 AudioContext global resumido");
+                });
+            }
+            
+            // 2. Activar AudioContext de Unity
+            if (window.unityInstance && window.unityInstance.Module) {
+                const audioContext = window.unityInstance.Module.audioContext || 
+                                    (window.AudioContext ? new window.AudioContext() : null);
+                if (audioContext) {
+                    console.log("🔊 AudioContext de Unity encontrado, estado:", audioContext.state);
+                    if (audioContext.state === 'suspended') {
+                        audioContext.resume().then(() => {
+                            console.log("🔊 AudioContext de Unity resumido");
+                        });
+                    } else {
+                        console.log("🔊 AudioContext de Unity ya está activo");
+                    }
+                } else {
+                    console.log("⚠️ No se encontró AudioContext de Unity");
+                }
+            }
+            
+            // 3. Intentar crear un AudioContext nuevo
+            try {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (AudioContext) {
+                    const newAudioContext = new AudioContext();
+                    newAudioContext.resume().then(() => {
+                        console.log("🔊 Nuevo AudioContext creado y resumido");
+                        window.globalAudioContext = newAudioContext;
+                    });
+                }
+            } catch (e) {
+                console.log("⚠️ Error al crear nuevo AudioContext:", e);
+            }
+            
+            // 4. Reproducir un sonido silencioso para desbloquear audio
+            try {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (AudioContext) {
+                    const ctx = new AudioContext();
+                    const oscillator = ctx.createOscillator();
+                    const gainNode = ctx.createGain();
+                    
+                    oscillator.connect(gainNode);
+                    gainNode.connect(ctx.destination);
+                    
+                    oscillator.frequency.value = 0; // Silencio
+                    gainNode.gain.value = 0; // Volumen 0
+                    
+                    oscillator.start();
+                    oscillator.stop(0.1);
+                    
+                    ctx.resume().then(() => {
+                        console.log("🔊 Audio desbloqueado con sonido silencioso");
+                    });
+                }
+            } catch (e) {
+                console.log("⚠️ Error al desbloquear audio con sonido silencioso:", e);
+            }
+            
+            // 5. Intentar reproducir un sonido de prueba usando Web Audio API
+            try {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (AudioContext) {
+                    const ctx = new AudioContext();
+                    const oscillator = ctx.createOscillator();
+                    const gainNode = ctx.createGain();
+                    
+                    oscillator.connect(gainNode);
+                    gainNode.connect(ctx.destination);
+                    
+                    oscillator.frequency.value = 440; // Nota A4
+                    gainNode.gain.value = 0.1; // Volumen bajo
+                    
+                    oscillator.start();
+                    oscillator.stop(0.5);
+                    
+                    console.log("🔊 Sonido de prueba reproducido");
+                }
+            } catch (e) {
+                console.log("⚠️ Error al reproducir sonido de prueba:", e);
+            }
+            
+            // 6. Ocultar botón después de intentar
+            document.getElementById('audio-button').style.display = 'none';
+        };
+
+        // 🚀 INICIALIZACIÓN DEL MOTOR DE JUEGO
+        createUnityInstance(canvas, {
+            dataUrl: "datagame.data",       
+            frameworkUrl: "framework.js", 
+            codeUrl: "game.wasm",       
+            companyName: "Unity",
+            productName: "WebGL Player",
+            productVersion: "1.0",
+            showBanner: unityShowBanner,
+            // 🔧 CONFIGURACIONES ADICIONALES PARA EVITAR BLOQUEOS
+            autoSyncPersistentDataPath: true,
+            streamingAssetsUrl: "StreamingAssets",
+            // 🔧 CONFIGURACIONES DE AUDIO
+            webglContextAttributes: {
+                preserveDrawingBuffer: false,
+                powerPreference: "high-performance"
+            },
+            // 🔧 PARÁMETROS DE AUDIO DE UNITY
+            audioContext: {
+                webAudio: {
+                    autoEnable: true,
+                }
+            },
+            // 🔧 CONFIGURACIONES ADICIONALES PARA AUDIO
+            print: function(message) {
+                console.log(message);
+            },
+            printErr: function(message) {
+                console.error(message);
+            }
+        }, (progress) => {
+            loadingBar.style.display = "block";
+            progressBarFull.style.width = (100 * progress) + "%";
+        }).then((unityInstance) => {
+            loadingBar.style.display = "none";
+            window.unityInstance = unityInstance; 
+            console.log("🚀 ¡El motor de Unity se ha enlazado correctamente sin bloqueos de red!");
+            
+            // 🔧 DIAGNÓSTICO DE AUDIO DE UNITY
+            setTimeout(() => {
+                console.log("🔊 === DIAGNÓSTICO DE AUDIO UNITY ===");
+                if (window.unityInstance && window.unityInstance.Module) {
+                    const audioContext = window.unityInstance.Module.audioContext;
+                    console.log("🔊 AudioContext de Unity:", audioContext);
+                    console.log("🔊 Estado del AudioContext:", audioContext ? audioContext.state : "No encontrado");
+                    console.log("🔊 Module completo:", window.unityInstance.Module);
+                } else {
+                    console.log("⚠️ No se encontró unityInstance.Module");
+                }
+            }, 1000);
+            
+            // 🔧 FORZAR RESUMEN DE AUDIO CONTEXT INMEDIATAMENTE
+            const forceAudioResume = function() {
+                if (window.unityInstance && window.unityInstance.Module) {
+                    const audioContext = window.unityInstance.Module.audioContext || 
+                                        (window.AudioContext ? new window.AudioContext() : null);
+                    if (audioContext) {
+                        console.log("🔊 Intentando resumir AudioContext, estado actual:", audioContext.state);
+                        if (audioContext.state === 'suspended') {
+                            audioContext.resume().then(() => {
+                                console.log("🔊 AudioContext resumido exitosamente");
+                            }).catch(e => {
+                                console.log("⚠️ Error al resumir AudioContext:", e);
+                            });
+                        } else {
+                            console.log("🔊 AudioContext ya está en estado:", audioContext.state);
+                        }
+                    } else {
+                        console.log("⚠️ No se encontró AudioContext");
+                    }
+                }
+            };
+            
+            // Intentar resumir audio inmediatamente
+            forceAudioResume();
+            
+            // También intentar con cualquier interacción del usuario
+            document.addEventListener('click', forceAudioResume, { once: true });
+            document.addEventListener('keydown', forceAudioResume, { once: true });
+            document.addEventListener('touchstart', forceAudioResume, { once: true });
+            
+            // Intentos adicionales automáticos
+            setTimeout(forceAudioResume, 500);
+            setTimeout(forceAudioResume, 1000);
+            setTimeout(forceAudioResume, 2000);
+            
+            // 🔧 NOTIFICAR A UNITY QUE EL SDK ESTÁ LISTO
+            setTimeout(() => {
+                console.log("🎯 Enviando señal de SDK ready a Unity");
+                if (window.SDKReady) {
+                    window.SDKReady();
+                }
+            }, 500);
+            
+        }).catch((error) => {
+            console.error("❌ Error al iniciar Unity:", error);
+            alert("Error al cargar el juego: " + error);
+        });
+    </script>
+</body>
+</html>
