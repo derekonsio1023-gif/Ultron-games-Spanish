@@ -1,0 +1,305 @@
+{
+  "animConfig": {
+    "_meta": {
+      "title": "AnimLoader v3 — animConfig (cat). Built from the LIVE 09cc02d4 dump (anim-config-live-dump.json), 2026-06-30.",
+      "resolutionOrder": [
+        "1. opts.animInfo (non-empty) -> animMap = mapOf(opts.animInfo)   [REPLACE — local player skin override, e.g. PLAYER_SKIN_ANIMINFO.FunnyChar]",
+        "2. else cfgId = animMapByGroupName[group][name]; if cfgId -> animMap = mapOf(animInfoConfigs[cfgId])   [REPLACE]",
+        "3. else -> animMap = clone(defaultAnimMap)   [C5]",
+        "4. (transition only) else if the live inline animInfo attr is non-empty -> mapOf(it). DIES at the script delete (Step 5).",
+        "5. (last resort) hardcoded C5 literal if the config asset itself failed to load."
+      ],
+      "replaceNotMerge": "mapOf(arr) = {}; arr.forEach(r => map[r.animStateName]=r.animName). REPLACE, never overlaid on defaultAnimMap — mirrors the live loaders setAnimMap EXACTLY. (A partial custom map like oiiaCat_spin_noMoving must NOT gain a Moving clip, and dino_*_noSmash must NOT gain a Smash/Hit clip.)",
+      "playerOverrideNote": "The local Player FunnyChar 8-state Throw set stays a CODE CONSTANT (Gameplay.PLAYER_SKIN_ANIMINFO) flowing via opts.animInfo (step 1) — NOT in this config. The config FunnyChar entry = the template/OtherPlayer dance set (step 2).",
+      "groupKeyed": "Keyed by the tp:* GROUP the manager instantiates from (pets/enemies/roblpets) + entity name — the runtime container, refining the design §L.3.2 holder-name keying. Each tp:* group name is unique, so group+name is unambiguous.",
+      "coverage": "cat runtime anim = tp:pets only (animals + the FunnyChar skin). food/egg/chest/wheel/misc/powerups carry NO anim loaders (static). enemies + the 6 roblpets-with-loaders are obby+empty (C5) and CnE-only.",
+      "quirkyRowsNote": "2026-07-02: Gecko/Kangaroo rows added — their tag sets don't own every C5 clip (gecko: no Roll; kangaroo: no Roll/Fly/Death), and the assetLoader's name-only fallback then binds ANOTHER rig's clip. Clips carry baked per-family Rig scale normalization (gecko family: constant localScale=40), so a cross-family bind renders ~40x wrong (live-verified: kangaroo flight <- gecko Fly.glb hit 19.2 world scale). Rows map every state to a clip the skin OWNS. Monkey/Turkey/Elephant own the full C5 set — no row needed. The other ~80 skins still run C5 with dormant cross-binds (cat only plays Idle/Moving on animals); the assetLoader now warns once per miss — extend rows here as those surface."
+    },
+    "defaultAnimMap": {
+      "Idle": "Idle_A",
+      "Moving": "Walk",
+      "Jump": "Jump",
+      "emote": "Roll",
+      "flight": "Fly",
+      "death": "Death",
+      "Smash": "Hit"
+    },
+    "animInfoConfigs": {
+      "funnyChar_otherPlayer": [
+        {
+          "animStateName": "Idle",
+          "animName": "Idle"
+        },
+        {
+          "animStateName": "Moving",
+          "animName": "Run Boost"
+        },
+        {
+          "animStateName": "Jump",
+          "animName": "Jump run middle"
+        },
+        {
+          "animStateName": "emote",
+          "animName": "Dance"
+        },
+        {
+          "animStateName": "Smash",
+          "animName": "Attack_heavy_hand_(right)"
+        },
+        {
+          "animStateName": "flight",
+          "animName": "Jump run middle"
+        },
+        {
+          "animStateName": "death",
+          "animName": "Death_1_(fight)"
+        }
+      ],
+      "dino_emoteRoll_noSmash": [
+        {
+          "animStateName": "Idle",
+          "animName": "Idle_A"
+        },
+        {
+          "animStateName": "Moving",
+          "animName": "Walk"
+        },
+        {
+          "animStateName": "Jump",
+          "animName": "Jump"
+        },
+        {
+          "animStateName": "emote",
+          "animName": "Roll"
+        },
+        {
+          "animStateName": "flight",
+          "animName": "Fly"
+        },
+        {
+          "animStateName": "death",
+          "animName": "Death"
+        }
+      ],
+      "dino_emoteAttack_noSmash": [
+        {
+          "animStateName": "Idle",
+          "animName": "Idle_A"
+        },
+        {
+          "animStateName": "Moving",
+          "animName": "Walk"
+        },
+        {
+          "animStateName": "Jump",
+          "animName": "Jump"
+        },
+        {
+          "animStateName": "emote",
+          "animName": "Attack"
+        },
+        {
+          "animStateName": "flight",
+          "animName": "Fly"
+        },
+        {
+          "animStateName": "death",
+          "animName": "Death"
+        }
+      ],
+      "dino_emoteAttack_smashAttk": [
+        {
+          "animStateName": "Idle",
+          "animName": "Idle_A"
+        },
+        {
+          "animStateName": "Moving",
+          "animName": "Walk"
+        },
+        {
+          "animStateName": "Jump",
+          "animName": "Jump"
+        },
+        {
+          "animStateName": "emote",
+          "animName": "Attack"
+        },
+        {
+          "animStateName": "Smash",
+          "animName": "attk"
+        },
+        {
+          "animStateName": "flight",
+          "animName": "Fly"
+        },
+        {
+          "animStateName": "death",
+          "animName": "Death"
+        }
+      ],
+      "creature_smashAttack": [
+        {
+          "animStateName": "Idle",
+          "animName": "Idle_A"
+        },
+        {
+          "animStateName": "Moving",
+          "animName": "Walk"
+        },
+        {
+          "animStateName": "Jump",
+          "animName": "Jump"
+        },
+        {
+          "animStateName": "emote",
+          "animName": "Roll"
+        },
+        {
+          "animStateName": "Smash",
+          "animName": "Attack"
+        },
+        {
+          "animStateName": "flight",
+          "animName": "Fly"
+        },
+        {
+          "animStateName": "death",
+          "animName": "Death"
+        }
+      ],
+      "oiiaCat_orig": [
+        {
+          "animStateName": "Idle",
+          "animName": "Idle_A"
+        },
+        {
+          "animStateName": "Moving",
+          "animName": "Take 001"
+        },
+        {
+          "animStateName": "Jump",
+          "animName": "Jump"
+        },
+        {
+          "animStateName": "emote",
+          "animName": "Take 001"
+        },
+        {
+          "animStateName": "Smash",
+          "animName": "Attack"
+        },
+        {
+          "animStateName": "flight",
+          "animName": "Fly"
+        },
+        {
+          "animStateName": "death",
+          "animName": "Death"
+        }
+      ],
+      "quirky_gecko_spinEmote": [
+        {
+          "animStateName": "Idle",
+          "animName": "Idle_A"
+        },
+        {
+          "animStateName": "Moving",
+          "animName": "Walk"
+        },
+        {
+          "animStateName": "Jump",
+          "animName": "Jump"
+        },
+        {
+          "animStateName": "emote",
+          "animName": "Spin"
+        },
+        {
+          "animStateName": "flight",
+          "animName": "Fly"
+        },
+        {
+          "animStateName": "death",
+          "animName": "Death"
+        },
+        {
+          "animStateName": "Smash",
+          "animName": "Hit"
+        }
+      ],
+      "quirky_kangaroo_ownedOnly": [
+        {
+          "animStateName": "Idle",
+          "animName": "Idle_A"
+        },
+        {
+          "animStateName": "Moving",
+          "animName": "Walk"
+        },
+        {
+          "animStateName": "Jump",
+          "animName": "Jump"
+        },
+        {
+          "animStateName": "emote",
+          "animName": "Spin"
+        },
+        {
+          "animStateName": "flight",
+          "animName": "Jump"
+        },
+        {
+          "animStateName": "death",
+          "animName": "Hit"
+        },
+        {
+          "animStateName": "Smash",
+          "animName": "Hit"
+        }
+      ],
+      "oiiaCat_spin_noMoving": [
+        {
+          "animStateName": "Idle",
+          "animName": "Idle_A"
+        },
+        {
+          "animStateName": "Jump",
+          "animName": "Jump"
+        },
+        {
+          "animStateName": "emote",
+          "animName": "Spin"
+        },
+        {
+          "animStateName": "Smash",
+          "animName": "Attack"
+        },
+        {
+          "animStateName": "flight",
+          "animName": "Fly"
+        },
+        {
+          "animStateName": "death",
+          "animName": "Death"
+        }
+      ]
+    },
+    "animMapByGroupName": {
+      "pets": {
+        "FunnyChar": "funnyChar_otherPlayer",
+        "Gecko": "quirky_gecko_spinEmote",
+        "Kangaroo": "quirky_kangaroo_ownedOnly",
+        "Giganotosaurus": "dino_emoteRoll_noSmash",
+        "TyrannosaurusRex": "dino_emoteAttack_noSmash",
+        "Pterodactyl": "dino_emoteRoll_noSmash",
+        "Regaliceratops": "dino_emoteAttack_smashAttk",
+        "Acanthopholis": "creature_smashAttack",
+        "Megalodon": "creature_smashAttack",
+        "OiiaCat_Orig": "oiiaCat_orig",
+        "OiiaCat": "oiiaCat_spin_noMoving"
+      },
+      "enemies": {},
+      "roblpets": {}
+    }
+  }
+}

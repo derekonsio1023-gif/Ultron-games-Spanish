@@ -1,0 +1,14 @@
+{
+    "carDodge": {
+        "yAngleMin": 13,
+        "yAngleMax": 13,
+        "zoom": 75,
+        "fixedXRotation": true,
+        "eulerX": -88,
+        "eulerY": 13,
+        "eulerZ": 10
+    },
+    "World": {
+        "zoom": 40
+    }
+}
