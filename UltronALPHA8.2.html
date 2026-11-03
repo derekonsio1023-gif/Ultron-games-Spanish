@@ -398,9 +398,6 @@
     // ══════════════════════════════════════════════════════════════
     const LOGO_HEADER_URL = 'https://raw.githack.com/derekonsio1023-gif/Ultron-games/main/assets/UltronT.png';
     const LOGO_LOADING_URL = 'https://raw.githack.com/derekonsio1023-gif/Ultron-games/main/assets/logo.png';
-    
-    // 👇 AQUÍ ESTÁ LA CORRECCIÓN: Usamos la URL completa de githack
-    const JUEGOS_JSON_URL = 'juegos.json';
 
     const _db = 'ultron-bd064-default-rtdb.europe-west1.firebasedatabase';
     const _getDB = () => `https://${_db}.app`;
@@ -426,22 +423,32 @@
     // ══════════════════════════════════════════════════════════════
     // CARGA DE DATOS (JSON)
     // ══════════════════════════════════════════════════════════════
-    async function cargarJuegos() {
-        try {
-            const res = await fetch(JUEGOS_JSON_URL);
-            if (!res.ok) throw new Error('No se pudo cargar juegos.json');
-            const data = await res.json();
-            if (Array.isArray(data)) {
-                CONFIG = {};
-                data.forEach((g, i) => { CONFIG[i + 1] = g; });
-            } else {
-                CONFIG = data || {};
-            }
-        } catch (e) {
-            console.error('Error cargando juegos:', e);
+    // Pon aquí la URL COMPLETA de tu JSON en githack (o deja 'juegos.json' si es ruta relativa)
+const JUEGOS_JSON_URL = 'https://raw.githack.com/derekonsio1023-gif/Ultron-games/main/juegos.json';
+
+async function cargarJuegos() {
+    try {
+        // 1) Cache-busting: cada carga genera una URL distinta
+        const sep = JUEGOS_JSON_URL.includes('?') ? '&' : '?';
+        const url = JUEGOS_JSON_URL + sep + 'v=' + Date.now();
+
+        // 2) no-store: el navegador no guarda ni reutiliza la respuesta
+        const res = await fetch(url, { cache: 'no-store' });
+        if (!res.ok) throw new Error('No se pudo cargar juegos.json');
+
+        const data = await res.json();
+
+        if (Array.isArray(data)) {
             CONFIG = {};
+            data.forEach((g, i) => { CONFIG[i + 1] = g; });
+        } else {
+            CONFIG = data || {};
         }
+    } catch (e) {
+        console.error('Error cargando juegos:', e);
+        CONFIG = {};
     }
+}
 
     // ══════════════════════════════════════════════════════════════
     // PERSONALIZACIÓN (Tema y Estilo)
