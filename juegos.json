@@ -291,7 +291,7 @@
     "48": {
         "titulo": "Jetpack Joyride",
         "img": "https://m.media-amazon.com/images/M/MV5BMjE0ZTYyZjktMTU3Zi00MjQwLWJiZjgtNjEyZjZhYjJiZTA4XkEyXkFqcGc@._V1_.jpg",
-        "url": "https://raw.githack.com/derekonsio1023-gif/Ultron-games/refs/heads/main/Jetpack%20Joyride.html",
+        "url": "https://raw.githack.com/derekonsio1023-gif/Ultron-jetpack-joyrideAH/refs/heads/main/index.html",
         "time": 0
     },
     "49": {
@@ -2290,11 +2290,56 @@
     "433": {
         "titulo": "Monkey Mart",
         "img": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTGSs1MHHpRyAvT231XFG3XCSj2qAFtKwSM5iXlAUXbxw&s=10",
-        "url": "https://raw.githack.com/ubg98/MonkeyMart/refs/heads/gh-pages/index.html"
+        "url": "https://raw.githack.com/derekonsio1023-gif/Ultron-monkey-market/refs/heads/main/index.html"
     },
     "434": {
         "titulo": "Cookie Clicker 2",
         "img": "https://play-lh.googleusercontent.com/s283KVsSvtBNYBiVbeb54yGLrC60iqMSspqow58PZY8QboVYutMe9Jd6CpI9F9CZN9C6VJCS0yL4yM99ZWYZeA",
         "url": "https://raw.githack.com/ubg98/CookieClicker2/refs/heads/gh-pages/index.html"
+    }
+    "435": {
+        "titulo": "Find the needle in the haystack",
+        "img": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTrOVZygmUrbPlDDRojFEAbjLjLpyEtnHj6_thTd8KGC0rQENBJT7UcWtff&s=10",
+        "url": "https://raw.githack.com/derekonsio1023-gif/Ultron-games-Spanish/refs/heads/main/Games/Find%20the%20needle%20in%20the%20haystack/index.html"
+    }
+    "436": {
+        "titulo": "Hungry Shark Evolution",
+        "img": "https://img.utdstc.com/icon/0a5/645/0a5645ad67af4a4e483d2c4403c03e1c876b5ce400b28fd8f79976eff8e88390:600",
+        "url": "https://raw.githack.com/derekonsio1023-gif/Ultron-games-Spanish/refs/heads/main/Games/Hungry%20Shark%20Evolution/Hungry%20Shark%20Evolution.html"
+    }
+    "437": {
+        "titulo": "Clean House",
+        "img": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTsz6JUTQy4EjAni_3304Rf04GOTosf1jOI3jkbIa-oiXs3NNmgVRbIbT0&s=10",
+        "url": "https://raw.githack.com/derekonsio1023-gif/Ultron-games-Spanish/refs/heads/main/Games/Clean%20House/index.html"
+    }
+    "438": {
+        "titulo": "Car Circle",
+        "img": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSEnofcl7EkNC9OT5Lesp8qxRJfxjK_xE07Fv7SU3Wy2Q&s=10",
+        "url": "https://raw.githack.com/derekonsio1023-gif/Ultron-games-Spanish/refs/heads/main/Games/Car%20Circle/index.html"
+    }
+    "439": {
+        "titulo": "Master Assasin",
+        "img": "https://img.poki-cdn.com/cdn-cgi/image/q=78,scq=50,width=1200,height=1200,fit=cover,f=png/6e41013388d8ada016ad08c426e6f03a/master-assassin-logo.png",
+        "url": "https://raw.githack.com/derekonsio1023-gif/Ultron-games-Spanish/refs/heads/main/Games/Master%20Assasins/index.html"
+    }
+    "440": {
+        "titulo": "Merge Blast",
+        "img": "https://img.poki-cdn.com/cdn-cgi/image/q=78,scq=50,width=1200,height=1200,fit=cover,f=png/d6075a38c97888182ebbcd632295a5e0/merge-blast-logo.png",
+        "url": "https://raw.githack.com/derekonsio1023-gif/Ultron-games-Spanish/refs/heads/main/Games/Merge%20Blast/index.html"
+    }
+    "441": {
+        "titulo": "Speed Stars",
+        "img": "https://img.poki-cdn.com/cdn-cgi/image/q=78,scq=50,width=1200,height=1200,fit=cover,f=png/04f09e51e79fd1b6a5cc974b504d6379/speed-stars-logo.png",
+        "url": "https://raw.githack.com/derekonsio1023-gif/Ultron-games-Spanish/refs/heads/main/Games/Speed%20Stars/index.html"
+    }
+    "442": {
+        "titulo": "Stickman hook",
+        "img": "https://img.poki-cdn.com/cdn-cgi/image/q=78,scq=50,width=1200,height=1200,fit=cover,f=png/99e090d154caf30f3625df7e456d5984/stickman-hook-logo.png",
+        "url": "https://raw.githack.com/derekonsio1023-gif/Ultron-stickmanhook/refs/heads/main/index.html"
+    }
+    "443": {
+        "titulo": "Sausage Flip",
+        "img": "https://img.poki-cdn.com/cdn-cgi/image/q=78,scq=50,width=1200,height=1200,fit=cover,f=png/7d0655113228257bad41d851c074600d/sausage-flip-logo.png",
+        "url": "https://raw.githack.com/derekonsio1023-gif/Ultron-sausage-flip/refs/heads/main/index.html"
     }
 }
