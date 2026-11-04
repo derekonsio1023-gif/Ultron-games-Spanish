@@ -123,6 +123,12 @@
             margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; text-align: center;
         }
         .cover-sub { display: none; }
+        .cover-media {
+            position: absolute; inset: 0;
+            width: 100%; height: 100%;
+            object-fit: cover;
+            z-index: 0;
+        }
 
         .carousel-arrow {
             position: absolute; top: 50%; transform: translateY(-50%); z-index: 5;
@@ -390,11 +396,8 @@
     // ══════════════════════════════════════════════════════════════
     // CONFIGURACIÓN
     // ══════════════════════════════════════════════════════════════
-    const LOGO_HEADER_URL = 'https://raw.githack.com/derekonsio1023-gif/ames/main/assets/UltronT.png';
-    const LOGO_LOADING_URL = 'https://raw.githack.com/derekonsio1023-gif/ames/main/assets/logo.png';
-    
-    // 👇 AQUÍ ESTÁ LA CORRECCIÓN: Usamos la URL completa de githack
-    const JUEGOS_JSON_URL = 'https://raw.githack.com/derekonsio1023-gif/Ultron-games-Spanish/main/juegos.json';
+    const LOGO_HEADER_URL = 'https://raw.githack.com/derekonsio1023-gif/Ultron-games/main/assets/UltronT.png';
+    const LOGO_LOADING_URL = 'https://raw.githack.com/derekonsio1023-gif/Ultron-games/main/assets/logo.png';
 
     const _db = 'ultron-bd064-default-rtdb.europe-west1.firebasedatabase';
     const _getDB = () => `https://${_db}.app`;
@@ -413,29 +416,39 @@
 
     let carruselIndex = 0;
     let carruselJuegos = [];
-    const CARRUSEL_MAX = 10;
+    const JUEGOS_CARRUSEL_SLOTS = [13, 415, 5, 3, 9, 62, 35, 105, 84, 133, 21, 277];
 
     let cardStyle = 'ultron';
 
     // ══════════════════════════════════════════════════════════════
     // CARGA DE DATOS (JSON)
     // ══════════════════════════════════════════════════════════════
-    async function cargarJuegos() {
-        try {
-            const res = await fetch(JUEGOS_JSON_URL);
-            if (!res.ok) throw new Error('No se pudo cargar juegos.json');
-            const data = await res.json();
-            if (Array.isArray(data)) {
-                CONFIG = {};
-                data.forEach((g, i) => { CONFIG[i + 1] = g; });
-            } else {
-                CONFIG = data || {};
-            }
-        } catch (e) {
-            console.error('Error cargando juegos:', e);
+    // Pon aquí la URL COMPLETA de tu JSON en githack (o deja 'juegos.json' si es ruta relativa)
+const JUEGOS_JSON_URL = 'https://raw.githack.com/derekonsio1023-gif/Ultron-games/main/juegos1.json';
+
+async function cargarJuegos() {
+    try {
+        // 1) Cache-busting: cada carga genera una URL distinta
+        const sep = JUEGOS_JSON_URL.includes('?') ? '&' : '?';
+        const url = JUEGOS_JSON_URL + sep + 'v=' + Date.now();
+
+        // 2) no-store: el navegador no guarda ni reutiliza la respuesta
+        const res = await fetch(url, { cache: 'no-store' });
+        if (!res.ok) throw new Error('No se pudo cargar juegos.json');
+
+        const data = await res.json();
+
+        if (Array.isArray(data)) {
             CONFIG = {};
+            data.forEach((g, i) => { CONFIG[i + 1] = g; });
+        } else {
+            CONFIG = data || {};
         }
+    } catch (e) {
+        console.error('Error cargando juegos:', e);
+        CONFIG = {};
     }
+}
 
     // ══════════════════════════════════════════════════════════════
     // PERSONALIZACIÓN (Tema y Estilo)
@@ -507,17 +520,22 @@
     // ══════════════════════════════════════════════════════════════
     // CARRUSEL (Siempre visible)
     // ══════════════════════════════════════════════════════════════
-    function renderCarrusel() {
+        function renderCarrusel() {
         const track = document.getElementById('carousel-track');
         if (!track) return;
-        const entries = getFilteredEntries();
-        carruselJuegos = entries.slice(0, CARRUSEL_MAX);
+        
+        // Filtrar el CONFIG usando la lista de slots que elegiste arriba
+        carruselJuegos = JUEGOS_CARRUSEL_SLOTS.map(slot => {
+            const game = CONFIG[slot];
+            return game ? { slot: slot, game: game, titulo: game.titulo || 'Próximamente' } : null;
+        }).filter(item => item !== null); // Elimina los números de juegos que no existan
+
         if (carruselIndex >= carruselJuegos.length) carruselIndex = 0;
         if (carruselIndex < 0) carruselIndex = 0;
 
         track.innerHTML = '';
         if (!carruselJuegos.length) {
-            track.innerHTML = '<div class="cover-card" style="justify-content:center;align-items:center;color:var(--text-soft);font-weight:800;padding:40px;">No hay juegos disponibles.</div>';
+            track.innerHTML = '<div class="cover-card" style="justify-content:center;align-items:center;color:var(--text-soft);font-weight:800;padding:40px;">No hay juegos seleccionados para el carrusel.</div>';
         } else {
             carruselJuegos.forEach(item => track.appendChild(crearCoverCard(item.slot, item.game)));
         }
@@ -525,16 +543,40 @@
         renderDots();
     }
 
-    function crearCoverCard(slot, game) {
+        function crearCoverCard(slot, game) {
         const card = document.createElement('div');
         card.className = 'cover-card';
         const titulo = game?.titulo || 'Próximamente';
         const bgImg = game?.img_cover || game?.img || '';
+        
+        // 👇 NUEVA PROPIEDAD: bg_media (puede ser un .mp4, .webm o un .gif)
+        const bgMedia = game?.bg_media || ''; 
         const thumbImg = game?.img || bgImg;
 
-        const bg = document.createElement('div');
-        bg.className = 'cover-bg';
-        if (bgImg) bg.style.backgroundImage = `url("${bgImg}")`;
+        // Lógica para el fondo (Video, GIF o Imagen estática)
+        let bgElement;
+        if (bgMedia) {
+            if (bgMedia.endsWith('.mp4') || bgMedia.endsWith('.webm')) {
+                // Es un video
+                bgElement = document.createElement('video');
+                bgElement.src = bgMedia;
+                bgElement.autoplay = true;
+                bgElement.loop = true;
+                bgElement.muted = true;
+                bgElement.playsInline = true;
+                bgElement.className = 'cover-media';
+            } else {
+                // Es un GIF o una imagen
+                bgElement = document.createElement('img');
+                bgElement.src = bgMedia;
+                bgElement.className = 'cover-media';
+            }
+        } else {
+            // Fallback a la imagen de fondo normal
+            bgElement = document.createElement('div');
+            bgElement.className = 'cover-bg';
+            if (bgImg) bgElement.style.backgroundImage = `url("${bgImg}")`;
+        }
 
         const leftPanel = document.createElement('div');
         leftPanel.className = 'cover-left-panel';
@@ -567,7 +609,7 @@
         leftPanel.appendChild(thumb);
         leftPanel.appendChild(info);
 
-        card.appendChild(bg);
+        card.appendChild(bgElement);
         card.appendChild(leftPanel);
 
         card.onclick = () => lanzarJuego(game, slot);
