@@ -1,0 +1,60 @@
+{
+  "sections": {
+    "0": {
+      "riseSpeed": 10,
+      "upTime": 5,
+      "fallSpeed": 20,
+      "minHeight": 3,
+      "maxHeight": 10
+    },
+    "1": {
+      "riseSpeed": 11,
+      "upTime": 6,
+      "fallSpeed": 22,
+      "minHeight": 6,
+      "maxHeight": 35
+    },
+    "2": {
+      "riseSpeed": 12,
+      "upTime": 7,
+      "fallSpeed": 24,
+      "minHeight": 15,
+      "maxHeight": 70
+    },
+    "3": {
+      "riseSpeed": 13,
+      "upTime": 7,
+      "fallSpeed": 26,
+      "minHeight": 30,
+      "maxHeight": 100
+    },
+    "4": {
+      "riseSpeed": 14,
+      "upTime": 8,
+      "fallSpeed": 28,
+      "minHeight": 50,
+      "maxHeight": 150
+    },
+    "5": {
+      "riseSpeed": 15,
+      "upTime": 8,
+      "fallSpeed": 30,
+      "minHeight": 80,
+      "maxHeight": 200
+    },
+    "6": {
+      "riseSpeed": 16,
+      "upTime": 10,
+      "fallSpeed": 32,
+      "minHeight": 160,
+      "maxHeight": 280
+    }
+  },
+  "default": {
+    "riseSpeed": 10,
+    "upTime": 3,
+    "fallSpeed": 20,
+    "minHeight": 3,
+    "maxHeight": 10
+  }
+}
