@@ -1920,5 +1920,10 @@
         "titulo": "Poppy Playtime 1",
         "img": "https://m.media-amazon.com/images/I/81v4eZ4CelL.png",
         "url": "https://raw.githack.com/derekonsio1023-gif/Ultron-games-Spanish/refs/heads/main/Games/Poppy%20Playtime/index2.html"
+    },
+    "445": {
+        "titulo": "Rocket League",
+        "img": "https://raw.githack.com/derekonsio1023-gif/Ultron-games-Spanish/main/assets/portadas/carsoccer.png",
+        "url": "https://raw.githack.com/derekonsio1023-gif/Ultron-CarSoccer/main/index.html"
     }
 }
