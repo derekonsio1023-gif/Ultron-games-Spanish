@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cargador GTA V - PlayGTA5 (Snapshot)</title>
+    <title>Cargador GTA V - PlayGTA5</title>
     <style>
+        /* Estilos (puedes personalizarlos a tu gusto) */
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #0b0b0b; color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; overflow: hidden; }
         #loader-container { text-align: center; width: 80%; max-width: 600px; }
         h1 { font-size: 2.5rem; margin-bottom: 1rem; letter-spacing: 2px; text-transform: uppercase; color: #f0c040; }
@@ -29,18 +30,19 @@
 
     <script>
         // =================================================================
-        // CONFIGURACIÓN PRINCIPAL
+        // CONFIGURACIÓN
         // =================================================================
 
-        // URL base desde donde se descargarán los recursos del juego.
-        // El ejemplo que proporcionaste apunta a este host.
-        // Asegúrate de que la ruta coincida con la estructura de tu espejo.
+        // URL base para los recursos del juego (la que confirmaste que está activa).
         const ASSET_BASE_URL = 'https://playgta5.com/data/';
 
-        // Ruta al manifiesto que contiene la lista de todos los archivos a descargar.
-        // En el repositorio original, este plan de descarga se encuentra en 'snapshot/download-plan.json'.
-        // Debes alojar este archivo (o uno similar) en una URL accesible.
-        const MANIFEST_URL = 'snapshot/download-plan.json'; // O la URL completa donde lo alojes
+        // Ruta al manifiesto de descarga.
+        // Si el archivo 'download-plan.json' está en la misma carpeta que este index.html,
+        // puedes usar una ruta relativa. Si está en otro lugar, pon la URL completa.
+        const MANIFEST_URL = 'download-plan.json'; // o 'https://playgta5.com/snapshot/download-plan.json'
+
+        // Nombre de la caché donde se guardarán los archivos.
+        const CACHE_NAME = 'playgta5-assets-v1';
 
         // =================================================================
         // ELEMENTOS DEL DOM
@@ -55,7 +57,7 @@
         // =================================================================
         let totalBytes = 0;
         let downloadedBytes = 0;
-        const fileBlobs = {}; // Almacena los Blobs descargados
+        let cache; // Referencia al objeto Cache
 
         // =================================================================
         // FUNCIONES AUXILIARES
@@ -75,12 +77,24 @@
         }
 
         // =================================================================
-        // LÓGICA DE DESCARGA
+        // LÓGICA PRINCIPAL
         // =================================================================
 
         /**
-         * Carga el manifiesto JSON que contiene la lista de archivos.
-         * El formato esperado es un array de objetos con al menos la propiedad 'path'.
+         * Abre (o crea) la caché del navegador.
+         */
+        async function openCache() {
+            if ('caches' in window) {
+                cache = await caches.open(CACHE_NAME);
+                log('✅ Cache API abierta correctamente.');
+            } else {
+                throw new Error('Tu navegador no soporta la Cache API. Se recomienda usar Chrome, Edge o Brave.');
+            }
+        }
+
+        /**
+         * Carga el manifiesto JSON con la lista de archivos.
+         * Se asume que el JSON es un array de objetos con al menos la propiedad 'path'.
          * Ejemplo: [{ "path": "x64/models/cdimages/componentpeds_a_m_m.rpf" }, ...]
          */
         async function loadManifest() {
@@ -89,8 +103,15 @@
                 const response = await fetch(MANIFEST_URL);
                 if (!response.ok) throw new Error(`HTTP ${response.status} al cargar el manifiesto`);
                 const manifest = await response.json();
-                log(`Manifiesto cargado: ${manifest.length} archivos encontrados.`);
-                return manifest;
+
+                // Si el manifiesto tiene una propiedad que contiene el array (ej. 'files'), la usamos.
+                const files = manifest.files || manifest;
+                if (!Array.isArray(files)) {
+                    throw new Error('El formato del manifiesto no es válido. Se esperaba un array de archivos.');
+                }
+
+                log(`Manifiesto cargado: ${files.length} archivos encontrados.`);
+                return files;
             } catch (error) {
                 log(`❌ Error al cargar el manifiesto: ${error.message}`);
                 statusText.textContent = 'Error: No se pudo cargar la lista de recursos.';
@@ -99,44 +120,55 @@
         }
 
         /**
-         * Descarga un archivo individual y actualiza el progreso.
+         * Descarga un archivo y lo guarda directamente en la caché.
+         * Esto evita mantener archivos gigantes en la memoria RAM.
          */
-        async function downloadFile(fileInfo) {
-            // Construimos la URL completa. Si 'fileInfo.path' ya es una URL, la usamos directamente.
-            const url = fileInfo.path.startsWith('http') ? fileInfo.path : ASSET_BASE_URL + fileInfo.path;
-            log(`Iniciando descarga: ${fileInfo.path}`);
+        async function downloadAndCacheFile(fileInfo) {
+            const path = fileInfo.path;
+            // Si la ruta ya es una URL completa, la usamos; si no, la concatenamos a la base.
+            const url = path.startsWith('http') ? path : ASSET_BASE_URL + path;
 
+            // Verificar si el archivo ya está en la caché para no volver a descargarlo.
+            const cachedResponse = await cache.match(url);
+            if (cachedResponse) {
+                const blob = await cachedResponse.blob();
+                downloadedBytes += blob.size;
+                totalBytes += blob.size; // Ajustamos el total para que el progreso sea preciso.
+                updateProgress();
+                log(`⏩ ${path} ya estaba en caché (${(blob.size / 1024 / 1024).toFixed(2)} MB).`);
+                return;
+            }
+
+            log(`Iniciando descarga: ${path}`);
             try {
                 const response = await fetch(url);
-                if (!response.ok) throw new Error(`HTTP ${response.status} para ${fileInfo.path}`);
+                if (!response.ok) throw new Error(`HTTP ${response.status} para ${path}`);
 
                 const contentLength = response.headers.get('content-length');
-                // Si el manifiesto no tiene el tamaño, usamos el de la respuesta.
                 const fileSize = contentLength ? parseInt(contentLength, 10) : (fileInfo.size || 0);
                 totalBytes += fileSize;
 
+                // Clonamos la respuesta para poder leerla dos veces: una para el progreso y otra para guardarla.
+                const responseClone = response.clone();
                 const reader = response.body.getReader();
-                const chunks = [];
                 let receivedLength = 0;
 
+                // Leemos el stream para actualizar el progreso en tiempo real.
                 while (true) {
                     const { done, value } = await reader.read();
                     if (done) break;
-
-                    chunks.push(value);
                     receivedLength += value.length;
                     downloadedBytes += value.length;
                     updateProgress();
                 }
 
-                const blob = new Blob(chunks);
-                fileBlobs[fileInfo.path] = blob;
-                log(`✅ ${fileInfo.path} descargado (${(blob.size / 1024 / 1024).toFixed(2)} MB).`);
+                // Guardamos la respuesta completa (el clon) en la caché.
+                await cache.put(url, responseClone);
+                log(`✅ ${path} descargado y guardado en caché (${(receivedLength / 1024 / 1024).toFixed(2)} MB).`);
 
             } catch (error) {
-                log(`❌ Error al descargar ${fileInfo.path}: ${error.message}`);
-                // No lanzamos el error para continuar con los demás archivos si uno falla.
-                // En un loader de producción, podrías querer detenerte si un archivo crítico falla.
+                log(`❌ Error al descargar ${path}: ${error.message}`);
+                // No detenemos todo el proceso si un archivo falla; se reintentará en la próxima carga.
             }
         }
 
@@ -145,14 +177,18 @@
          */
         async function startDownload() {
             try {
+                await openCache();
                 const manifest = await loadManifest();
+
+                // Reiniciar contadores
                 totalBytes = 0;
                 downloadedBytes = 0;
                 updateProgress();
 
                 log('Comenzando la descarga de recursos del juego...');
+                // Descarga secuencial para no saturar la red ni el disco.
                 for (const file of manifest) {
-                    await downloadFile(file);
+                    await downloadAndCacheFile(file);
                 }
 
                 log('🎉 Todos los recursos han sido procesados.');
@@ -172,15 +208,17 @@
             log('Iniciando el motor WebAssembly de PlayGTA5...');
 
             // Aquí es donde integrarías el motor real.
-            // El motor original (game.wasm, game.js, workers) se cargaría desde los Blobs descargados.
-            // Por ejemplo:
-            // const wasmUrl = URL.createObjectURL(fileBlobs['b/8b0b5899ed/game.wasm']);
-            // const gameJsUrl = URL.createObjectURL(fileBlobs['b/8b0b5899ed/game.js']);
-            // ... y luego inicializarías el runtime con esas URLs.
+            // El motor original (game.wasm, game.js, workers) se cargaría desde la caché.
+            // Ejemplo:
+            // const wasmResponse = await cache.match('https://playgta5.com/data/game.wasm');
+            // const wasmBlob = await wasmResponse.blob();
+            // const wasmUrl = URL.createObjectURL(wasmBlob);
+            // ... y luego inicializarías el runtime con esa URL.
 
             setTimeout(() => {
-                alert('El motor de PlayGTA5 se iniciaría aquí. Revisa la consola para ver los Blobs descargados.');
-                console.log('Blobs listos para el motor:', Object.keys(fileBlobs));
+                alert('El motor de PlayGTA5 se iniciaría aquí. Revisa la consola para ver los archivos en caché.');
+                // Para verificar que los archivos están en caché, puedes ejecutar:
+                // caches.open(CACHE_NAME).then(c => c.keys().then(keys => console.log('Archivos en caché:', keys)));
             }, 500);
         }
 
