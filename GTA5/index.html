@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cargador GTA V - PlayGTA5 (Snapshot)</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #0b0b0b; color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; overflow: hidden; }
+        #loader-container { text-align: center; width: 80%; max-width: 600px; }
+        h1 { font-size: 2.5rem; margin-bottom: 1rem; letter-spacing: 2px; text-transform: uppercase; color: #f0c040; }
+        #progress-bar { width: 100%; height: 25px; background-color: #333; border-radius: 12px; overflow: hidden; box-shadow: 0 0 10px #000; margin-bottom: 1rem; }
+        #progress-fill { height: 100%; width: 0%; background: linear-gradient(90deg, #f0c040, #ffaa00); transition: width 0.2s ease; border-radius: 12px; }
+        #status-text { font-size: 1.1rem; margin-bottom: 0.5rem; }
+        #log { font-size: 0.85rem; color: #aaa; height: 80px; overflow-y: auto; text-align: left; border-top: 1px solid #333; padding-top: 0.5rem; }
+        #log span { display: block; margin-bottom: 2px; }
+        .hidden { display: none; }
+        #play-button { margin-top: 1.5rem; padding: 12px 30px; font-size: 1.2rem; background-color: #f0c040; border: none; border-radius: 6px; color: #000; font-weight: bold; cursor: pointer; transition: background 0.2s; }
+        #play-button:hover { background-color: #ffaa00; }
+    </style>
+</head>
+<body>
+    <div id="loader-container">
+        <h1>Cargando Los Santos</h1>
+        <div id="progress-bar"><div id="progress-fill"></div></div>
+        <div id="status-text">Iniciando...</div>
+        <div id="log"></div>
+        <button id="play-button" class="hidden" onclick="startGame()">¡Jugar Ahora!</button>
+    </div>
+
+    <script>
+        // =================================================================
+        // CONFIGURACIÓN PRINCIPAL
+        // =================================================================
+
+        // URL base desde donde se descargarán los recursos del juego.
+        // El ejemplo que proporcionaste apunta a este host.
+        // Asegúrate de que la ruta coincida con la estructura de tu espejo.
+        const ASSET_BASE_URL = 'https://playgta5.com/data/';
+
+        // Ruta al manifiesto que contiene la lista de todos los archivos a descargar.
+        // En el repositorio original, este plan de descarga se encuentra en 'snapshot/download-plan.json'.
+        // Debes alojar este archivo (o uno similar) en una URL accesible.
+        const MANIFEST_URL = 'snapshot/download-plan.json'; // O la URL completa donde lo alojes
+
+        // =================================================================
+        // ELEMENTOS DEL DOM
+        // =================================================================
+        const progressFill = document.getElementById('progress-fill');
+        const statusText = document.getElementById('status-text');
+        const logContainer = document.getElementById('log');
+        const playButton = document.getElementById('play-button');
+
+        // =================================================================
+        // ESTADO GLOBAL
+        // =================================================================
+        let totalBytes = 0;
+        let downloadedBytes = 0;
+        const fileBlobs = {}; // Almacena los Blobs descargados
+
+        // =================================================================
+        // FUNCIONES AUXILIARES
+        // =================================================================
+        function log(message) {
+            const span = document.createElement('span');
+            span.textContent = `> ${message}`;
+            logContainer.appendChild(span);
+            logContainer.scrollTop = logContainer.scrollHeight;
+            console.log(message);
+        }
+
+        function updateProgress() {
+            const percent = totalBytes > 0 ? (downloadedBytes / totalBytes) * 100 : 0;
+            progressFill.style.width = `${percent.toFixed(2)}%`;
+            statusText.textContent = `Descargando... ${percent.toFixed(1)}% (${(downloadedBytes / 1024 / 1024).toFixed(1)} MB / ${(totalBytes / 1024 / 1024).toFixed(1)} MB)`;
+        }
+
+        // =================================================================
+        // LÓGICA DE DESCARGA
+        // =================================================================
+
+        /**
+         * Carga el manifiesto JSON que contiene la lista de archivos.
+         * El formato esperado es un array de objetos con al menos la propiedad 'path'.
+         * Ejemplo: [{ "path": "x64/models/cdimages/componentpeds_a_m_m.rpf" }, ...]
+         */
+        async function loadManifest() {
+            log('Cargando manifiesto de recursos...');
+            try {
+                const response = await fetch(MANIFEST_URL);
+                if (!response.ok) throw new Error(`HTTP ${response.status} al cargar el manifiesto`);
+                const manifest = await response.json();
+                log(`Manifiesto cargado: ${manifest.length} archivos encontrados.`);
+                return manifest;
+            } catch (error) {
+                log(`❌ Error al cargar el manifiesto: ${error.message}`);
+                statusText.textContent = 'Error: No se pudo cargar la lista de recursos.';
+                throw error;
+            }
+        }
+
+        /**
+         * Descarga un archivo individual y actualiza el progreso.
+         */
+        async function downloadFile(fileInfo) {
+            // Construimos la URL completa. Si 'fileInfo.path' ya es una URL, la usamos directamente.
+            const url = fileInfo.path.startsWith('http') ? fileInfo.path : ASSET_BASE_URL + fileInfo.path;
+            log(`Iniciando descarga: ${fileInfo.path}`);
+
+            try {
+                const response = await fetch(url);
+                if (!response.ok) throw new Error(`HTTP ${response.status} para ${fileInfo.path}`);
+
+                const contentLength = response.headers.get('content-length');
+                // Si el manifiesto no tiene el tamaño, usamos el de la respuesta.
+                const fileSize = contentLength ? parseInt(contentLength, 10) : (fileInfo.size || 0);
+                totalBytes += fileSize;
+
+                const reader = response.body.getReader();
+                const chunks = [];
+                let receivedLength = 0;
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    chunks.push(value);
+                    receivedLength += value.length;
+                    downloadedBytes += value.length;
+                    updateProgress();
+                }
+
+                const blob = new Blob(chunks);
+                fileBlobs[fileInfo.path] = blob;
+                log(`✅ ${fileInfo.path} descargado (${(blob.size / 1024 / 1024).toFixed(2)} MB).`);
+
+            } catch (error) {
+                log(`❌ Error al descargar ${fileInfo.path}: ${error.message}`);
+                // No lanzamos el error para continuar con los demás archivos si uno falla.
+                // En un loader de producción, podrías querer detenerte si un archivo crítico falla.
+            }
+        }
+
+        /**
+         * Orquesta la descarga secuencial de todos los archivos del manifiesto.
+         */
+        async function startDownload() {
+            try {
+                const manifest = await loadManifest();
+                totalBytes = 0;
+                downloadedBytes = 0;
+                updateProgress();
+
+                log('Comenzando la descarga de recursos del juego...');
+                for (const file of manifest) {
+                    await downloadFile(file);
+                }
+
+                log('🎉 Todos los recursos han sido procesados.');
+                statusText.textContent = 'Listo para jugar.';
+                progressFill.style.width = '100%';
+                playButton.classList.remove('hidden');
+
+            } catch (error) {
+                log('La carga falló. Revisa los mensajes anteriores para más detalles.');
+            }
+        }
+
+        // =================================================================
+        // INICIO DEL JUEGO (SIMULADO)
+        // =================================================================
+        function startGame() {
+            log('Iniciando el motor WebAssembly de PlayGTA5...');
+
+            // Aquí es donde integrarías el motor real.
+            // El motor original (game.wasm, game.js, workers) se cargaría desde los Blobs descargados.
+            // Por ejemplo:
+            // const wasmUrl = URL.createObjectURL(fileBlobs['b/8b0b5899ed/game.wasm']);
+            // const gameJsUrl = URL.createObjectURL(fileBlobs['b/8b0b5899ed/game.js']);
+            // ... y luego inicializarías el runtime con esas URLs.
+
+            setTimeout(() => {
+                alert('El motor de PlayGTA5 se iniciaría aquí. Revisa la consola para ver los Blobs descargados.');
+                console.log('Blobs listos para el motor:', Object.keys(fileBlobs));
+            }, 500);
+        }
+
+        // =================================================================
+        // ARRANQUE
+        // =================================================================
+        window.addEventListener('DOMContentLoaded', () => {
+            startDownload();
+        });
+    </script>
+</body>
+</html>
