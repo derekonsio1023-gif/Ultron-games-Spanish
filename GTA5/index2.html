@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cargador GTA V - PlayGTA5</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #0b0b0b; color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; overflow: hidden; }
+        #loader-container { text-align: center; width: 80%; max-width: 600px; }
+        h1 { font-size: 2.5rem; margin-bottom: 1rem; letter-spacing: 2px; text-transform: uppercase; color: #f0c040; }
+        #progress-bar { width: 100%; height: 25px; background-color: #333; border-radius: 12px; overflow: hidden; box-shadow: 0 0 10px #000; margin-bottom: 1rem; }
+        #progress-fill { height: 100%; width: 0%; background: linear-gradient(90deg, #f0c040, #ffaa00); transition: width 0.2s ease; border-radius: 12px; }
+        #status-text { font-size: 1.1rem; margin-bottom: 0.5rem; }
+        #log { font-size: 0.85rem; color: #aaa; height: 120px; overflow-y: auto; text-align: left; border-top: 1px solid #333; padding-top: 0.5rem; }
+        #log span { display: block; margin-bottom: 2px; word-break: break-all; }
+        .hidden { display: none; }
+        #play-button { margin-top: 1.5rem; padding: 12px 30px; font-size: 1.2rem; background-color: #f0c040; border: none; border-radius: 6px; color: #000; font-weight: bold; cursor: pointer; transition: background 0.2s; }
+        #play-button:hover { background-color: #ffaa00; }
+        .debug { color: #ffcc00; font-family: monospace; font-size: 0.75rem; }
+    </style>
+</head>
+<body>
+    <div id="loader-container">
+        <h1>Cargando Los Santos</h1>
+        <div id="progress-bar"><div id="progress-fill"></div></div>
+        <div id="status-text">Iniciando...</div>
+        <div id="log"></div>
+        <button id="play-button" class="hidden" onclick="startGame()">¡Jugar Ahora!</button>
+    </div>
+
+    <script>
+        // =================================================================
+        // CONFIGURACIÓN
+        // =================================================================
+        const ASSET_BASE_URL = 'https://playgta5.com/data/';
+
+        // ⚠️ IMPORTANTE: Ajusta esta ruta a donde realmente esté tu download-plan.json
+        // Si el index.html y el JSON están en la MISMA carpeta del repo, deja 'download-plan.json'.
+        // Si el JSON está en la raíz del repo y el index en GTA5/, usa '../download-plan.json'.
+        // Si quieres leerlo directamente de playgta5.com, usa una URL absoluta.
+        const MANIFEST_URL = 'download-plan.json';
+
+        const CACHE_NAME = 'playgta5-assets-v1';
+
+        // =================================================================
+        // DOM
+        // =================================================================
+        const progressFill = document.getElementById('progress-fill');
+        const statusText = document.getElementById('status-text');
+        const logContainer = document.getElementById('log');
+        const playButton = document.getElementById('play-button');
+
+        let totalBytes = 0;
+        let downloadedBytes = 0;
+        let cache;
+
+        // =================================================================
+        // UTILIDADES
+        // =================================================================
+        function log(message, debug = false) {
+            const span = document.createElement('span');
+            if (debug) span.className = 'debug';
+            span.textContent = `> ${message}`;
+            logContainer.appendChild(span);
+            logContainer.scrollTop = logContainer.scrollHeight;
+            console.log(message);
+        }
+
+        function updateProgress() {
+            const percent = totalBytes > 0 ? (downloadedBytes / totalBytes) * 100 : 0;
+            progressFill.style.width = `${percent.toFixed(2)}%`;
+            statusText.textContent = `Descargando... ${percent.toFixed(1)}% (${(downloadedBytes / 1024 / 1024).toFixed(1)} MB / ${(totalBytes / 1024 / 1024).toFixed(1)} MB)`;
+        }
+
+        // =================================================================
+        // CACHE API
+        // =================================================================
+        async function openCache() {
+            if (!('caches' in window)) {
+                throw new Error('Tu navegador no soporta la Cache API. Usa Chrome, Edge o Brave.');
+            }
+            cache = await caches.open(CACHE_NAME);
+            log('✅ Cache API abierta correctamente.');
+        }
+
+        // =================================================================
+        // CARGA Y NORMALIZACIÓN DEL MANIFIESTO
+        // =================================================================
+
+        /**
+         * Convierte CUALQUIER formato de manifiesto en un array uniforme:
+         * [{ path: "...", size: 123 }, ...]
+         *
+         * Formatos soportados:
+         *  1) Array directo: [{path, size}, ...]
+         *  2) { files: [ {path, size}, ... ] }
+         *  3) { files: { "ruta": {size, hash}, ... } }  -> diccionario
+         *  4) { "ruta": 12345, "otra": 678 }             -> objeto plano ruta: tamaño
+         *  5) { entries: [...] } / { data: [...] } / { assets: [...] }
+         */
+        function normalizeManifest(raw) {
+            if (raw === null || typeof raw !== 'object') {
+                throw new Error('El manifiesto no es un objeto JSON válido.');
+            }
+
+            // Caso 1: Array directo
+            if (Array.isArray(raw)) {
+                log(`Formato detectado: array directo (${raw.length} entradas).`);
+                return raw.map(entry => normalizeEntry(entry));
+            }
+
+            // Caso 2-5: buscar la primera propiedad que sea un array o diccionario útil
+            const candidates = ['files', 'entries', 'assets', 'data', 'items', 'resources'];
+            for (const key of candidates) {
+                if (Array.isArray(raw[key])) {
+                    log(`Formato detectado: objeto con "${key}" como array (${raw[key].length} entradas).`);
+                    return raw[key].map(entry => normalizeEntry(entry));
+                }
+                if (raw[key] && typeof raw[key] === 'object') {
+                    log(`Formato detectado: objeto con "${key}" como diccionario.`);
+                    return Object.entries(raw[key]).map(([path, val]) => normalizeEntry({ path, ...(typeof val === 'object' ? val : { size: val }) }));
+                }
+            }
+
+            // Caso último: asumir que el objeto entero es un diccionario { ruta: tamaño }
+            const keys = Object.keys(raw);
+            if (keys.length > 0) {
+                log(`Formato detectado: diccionario plano (${keys.length} entradas).`);
+                return keys.map(path => normalizeEntry({ path, size: raw[path] }));
+            }
+
+            throw new Error('No se pudo detectar un formato de manifiesto reconocible.');
+        }
+
+        /**
+         * Normaliza una entrada individual a { path, size }.
+         * Acepta múltiples variantes de nombres de propiedades.
+         */
+        function normalizeEntry(entry) {
+            if (typeof entry === 'string') return { path: entry, size: 0 };
+            if (typeof entry !== 'object' || entry === null) {
+                throw new Error(`Entrada de manifiesto inválida: ${JSON.stringify(entry)}`);
+            }
+            const path = entry.path || entry.name || entry.file || entry.url || entry.href;
+            const size = entry.size || entry.bytes || entry.length || entry.byteLength || 0;
+            if (!path) {
+                throw new Error(`Entrada sin ruta: ${JSON.stringify(entry)}`);
+            }
+            return { path, size: Number(size) || 0 };
+        }
+
+        async function loadManifest() {
+            log('Cargando manifiesto de recursos...');
+            log(`URL del manifiesto: ${MANIFEST_URL}`, true);
+
+            const response = await fetch(MANIFEST_URL, { cache: 'no-store' });
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status} al cargar el manifiesto desde ${MANIFEST_URL}`);
+            }
+
+            const text = await response.text();
+            log(`Manifiesto descargado (${text.length} bytes).`, true);
+
+            // Muestra los primeros caracteres del JSON para diagnóstico
+            log(`Vista previa del JSON: ${text.slice(0, 300).replace(/\s+/g, ' ')}...`, true);
+
+            let raw;
+            try {
+                raw = JSON.parse(text);
+            } catch (e) {
+                throw new Error(`El manifiesto no es JSON válido: ${e.message}`);
+            }
+
+            // Info de diagnóstico sobre las claves de primer nivel
+            if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
+                log(`Claves de primer nivel: ${Object.keys(raw).slice(0, 10).join(', ')}${Object.keys(raw).length > 10 ? '...' : ''}`, true);
+            }
+
+            const files = normalizeManifest(raw);
+            log(`✅ Manifiesto normalizado: ${files.length} archivos listos para descargar.`);
+            return files;
+        }
+
+        // =================================================================
+        // DESCARGA
+        // =================================================================
+        async function downloadAndCacheFile(fileInfo) {
+            const path = fileInfo.path;
+            const url = path.startsWith('http') ? path : ASSET_BASE_URL + path;
+
+            const cachedResponse = await cache.match(url);
+            if (cachedResponse) {
+                const blob = await cachedResponse.blob();
+                totalBytes += blob.size;
+                downloadedBytes += blob.size;
+                updateProgress();
+                log(`⏩ (caché) ${path}`);
+                return;
+            }
+
+            log(`⬇️ ${path}`);
+            try {
+                const response = await fetch(url);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+                const contentLength = response.headers.get('content-length');
+                const fileSize = contentLength ? parseInt(contentLength, 10) : (fileInfo.size || 0);
+                totalBytes += fileSize;
+
+                const responseClone = response.clone();
+                const reader = response.body.getReader();
+                let receivedLength = 0;
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    receivedLength += value.length;
+                    downloadedBytes += value.length;
+                    updateProgress();
+                }
+
+                await cache.put(url, responseClone);
+                log(`✅ ${path} (${(receivedLength / 1024 / 1024).toFixed(2)} MB)`);
+            } catch (error) {
+                log(`❌ Error en ${path}: ${error.message}`);
+            }
+        }
+
+        async function startDownload() {
+            try {
+                await openCache();
+                const manifest = await loadManifest();
+
+                totalBytes = 0;
+                downloadedBytes = 0;
+                updateProgress();
+
+                log('Comenzando descarga de recursos...');
+                for (const file of manifest) {
+                    await downloadAndCacheFile(file);
+                }
+
+                log('🎉 Todos los recursos procesados.');
+                statusText.textContent = 'Listo para jugar.';
+                progressFill.style.width = '100%';
+                playButton.classList.remove('hidden');
+            } catch (error) {
+                log(`❌ Fallo general: ${error.message}`);
+                statusText.textContent = `Error: ${error.message}`;
+            }
+        }
+
+        // =================================================================
+        // INICIO DEL JUEGO (placeholder)
+        // =================================================================
+        function startGame() {
+            log('Iniciando motor WebAssembly de PlayGTA5...');
+            setTimeout(() => {
+                alert('Aquí se cargaría el motor real. Revisa la consola para ver los archivos en caché.');
+            }, 300);
+        }
+
+        // =================================================================
+        window.addEventListener('DOMContentLoaded', startDownload);
+    </script>
+</body>
+</html>
