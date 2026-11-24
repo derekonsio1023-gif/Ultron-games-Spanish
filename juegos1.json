@@ -892,7 +892,7 @@
     "154": {
         "titulo": "Attack Hole",
         "img": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ9jYldIL-0e-npUSjDG8S4lprSNgZO6eCbgquHgi77yrjafRYWZCLyco8&s=10",
-        "url": "https://raw.githack.com/bubbls/youtube-playables/refs/heads/main/attack-hole/index.html"
+        "url": "https://raw.githack.com/derekonsio1023-gif/youtube-playables/refs/heads/main/attack-hole/index.html"
     },
     "155": {
         "titulo": "Ball Blast",
@@ -1930,5 +1930,16 @@
         "titulo": "Skate 3",
         "img": "https://static.wikia.nocookie.net/skate/images/7/7d/Skate_3.jpg/revision/latest?cb=20220715005550",
         "url": "https://raw.githack.com/derekonsio1023-gif/Ultron-games-Spanish/refs/heads/main/Games/Skate%203/index.html"
+    },
+    "446": {
+        "titulo": "Idle Mining Empire",
+        "img": "https://img.poki-cdn.com/cdn-cgi/image/q=78,scq=50,width=1200,height=1200,fit=cover,f=png/5c4239ad22ce9b302ca8158adbcd9c02/idle-mining-empire-logo.png",
+        "url": "https://raw.githack.com/derekonsio1023-gif/Ultron-IdleMiningEmpire/refs/heads/gh-pages/index.html"
+    },
+    "446": {
+        "titulo": "Grand Theft Auto 1",
+        "img": "https://sm.ign.com/ign_es/photo/e/every-gta-/every-gta-game-ranked_37jh.jpg",
+        "url": "https://raw.githack.com/derekonsio1023-gif/Ultron-GTA1/refs/heads/gh-pages/index.html"
     }
+}
 }
