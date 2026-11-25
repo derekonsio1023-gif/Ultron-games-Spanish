@@ -198,87 +198,71 @@
     });
 
   // LANZAR PORTAL
-  launcher.addEventListener("click", async () => {
+  
+launcher.addEventListener("click", async () => {
+  if (lanzado) return;
+  lanzado = true;
 
-    if (lanzado) return;
+  // Abrir about:blank durante el clic
+  const portal = window.open("about:blank", "_blank");
 
-    lanzado = true;
+  if (!portal) {
+    lanzado = false;
+    status.textContent = "Ventana emergente bloqueada";
+    return;
+  }
 
-    // Abrir pestaña nueva inmediatamente.
-    // Debe ejecutarse antes del await para evitar
-    // que Chrome bloquee la ventana emergente.
-
-    const portal = window.open("about:blank", "_blank");
-
-    if (!portal) {
-
-      lanzado = false;
-
-      status.textContent =
-        "Ventana bloqueada. Permite las ventanas emergentes.";
-
-      return;
-    }
-
+  try {
     status.textContent = "Iniciando Ultron...";
 
-    try {
+    // Obtener versión detectada
+    const version = await resolviendo;
 
-      // Esperar a que termine la comprobación de GitHub.
-      const version = await resolviendo;
+    if (portal.closed) return;
 
-      if (portal.closed) return;
+    const url = gameUrl(version);
 
-      const url = gameUrl(version);
+    // Descargar HTML original desde Githack
+    const response = await fetch(url, {
+      cache: "no-store"
+    });
 
-      // REDIRECCIÓN DIRECTA AL PORTAL.
-      // No se escribe HTML.
-      // No se crean iframes.
-      // No se carga ningún launcher intermedio.
-
-      portal.location.replace(url);
-
-      status.textContent =
-        "Portal iniciado: " + version.file;
-
-    } catch (error) {
-
-      if (!portal.closed) {
-        portal.location.href = "about:blank";
-      }
-
-      status.textContent =
-        "Error: " + error.message;
-
-      lanzado = false;
+    if (!response.ok) {
+      throw new Error("Error descargando portal: " + response.status);
     }
-  });
 
-  // COMPROBAR NUEVAS VERSIONES AL VOLVER
-  document.addEventListener("visibilitychange", async () => {
+    let html = await response.text();
 
-    if (
-      document.visibilityState !== "visible" ||
-      lanzado
-    ) return;
+    if (portal.closed) return;
 
-    try {
+    // Establecer URL base para los recursos del portal
+    const base = `<base href="${url}">`;
 
-      const remoto = await resolverRemoto();
+    if (/<head[^>]*>/i.test(html)) {
+      html = html.replace(
+        /<head([^>]*)>/i,
+        `<head$1>${base}`
+      );
+    } else {
+      html = `<!DOCTYPE html><html><head>${base}</head><body>${html}</body></html>`;
+    }
 
-      if (!actual || remoto.sha !== actual.sha) {
+    // Introducir el portal dentro de about:blank
+    portal.document.open();
+    portal.document.write(html);
+    portal.document.close();
 
-        actual = remoto;
+    status.textContent = "Portal iniciado: " + version.file;
 
-        resolviendo = Promise.resolve(remoto);
+  } catch (error) {
+    if (!portal.closed) {
+      portal.document.body.textContent =
+        "Error cargando Ultron: " + error.message;
+    }
 
-        status.textContent =
-          "Nueva versión detectada: " +
-          remoto.file;
-      }
-
-    } catch {}
-  });
+    lanzado = false;
+  }
+});
 
 })();
 </script>
