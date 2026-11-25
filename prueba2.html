@@ -1,0 +1,288 @@
+```html
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ultron Launcher</title>
+
+<style>
+  html,body {
+    margin:0;
+    padding:0;
+    background:#080b14;
+    color:#e6edf3;
+    font-family:system-ui,Segoe UI,sans-serif;
+  }
+
+  #launcher {
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+    user-select:none;
+  }
+
+  #launcher .inner {
+    padding:32px;
+    max-width:520px;
+    width:100%;
+    text-align:center;
+  }
+
+  #launcher h1 {
+    margin:0 0 8px;
+    font-size:22px;
+  }
+
+  #launcher p {
+    margin:0;
+    color:#8b949e;
+    font-size:14px;
+  }
+
+  #launcher .hint {
+    margin-top:16px;
+    font-size:12px;
+  }
+</style>
+</head>
+
+<body>
+
+<div id="launcher">
+  <div class="inner">
+    <h1>Ultron Launcher</h1>
+    <p id="status">Comprobando versión…</p>
+    <p class="hint">Haz click en cualquier parte para lanzar</p>
+  </div>
+</div>
+
+<script>
+(() => {
+  "use strict";
+
+  // CONFIGURACIÓN
+  const OWNER = "derekonsio1023-gif";
+  const REPO = "Ultron-games-Spanish";
+  const BRANCH = "main";
+
+  const FILE_RE = /^UltronALPHA\d+(?:\.\d+)*\.html$/i;
+
+  const FALLBACK = {
+    sha: BRANCH,
+    file: "UltronALPHA8.2.html"
+  };
+
+  const LS = "ultron:latest";
+
+  const launcher = document.getElementById("launcher");
+  const status = document.getElementById("status");
+
+  let lanzado = false;
+  let actual = null;
+
+  // CACHÉ
+  function readCache() {
+    try {
+      return JSON.parse(localStorage.getItem(LS) || "null");
+    } catch {
+      return null;
+    }
+  }
+
+  function writeCache(value) {
+    try {
+      localStorage.setItem(LS, JSON.stringify(value));
+    } catch {}
+  }
+
+  // GITHUB API
+  async function gh(path) {
+    return fetch(
+      `https://api.github.com/repos/${OWNER}/${REPO}${path}`,
+      {
+        cache: "no-store",
+        headers: {
+          Accept: "application/vnd.github+json"
+        }
+      }
+    );
+  }
+
+  // BUSCAR ÚLTIMA VERSIÓN
+  async function resolverRemoto() {
+
+    const response = await gh(`/commits/${BRANCH}`);
+
+    if (response.status === 403 || response.status === 429) {
+      throw new Error("Límite de GitHub API");
+    }
+
+    if (!response.ok) {
+      throw new Error("GitHub " + response.status);
+    }
+
+    const commit = await response.json();
+    const sha = commit.sha;
+
+    const cached = readCache();
+
+    if (cached && cached.sha === sha && cached.file) {
+      return cached;
+    }
+
+    const contents = await gh(`/contents/?ref=${sha}`);
+
+    if (!contents.ok) {
+      throw new Error("Contents " + contents.status);
+    }
+
+    const items = await contents.json();
+
+    const files = items
+      .filter(item =>
+        item.type === "file" &&
+        FILE_RE.test(item.name)
+      )
+      .map(item => item.name)
+      .sort((a, b) =>
+        a.localeCompare(b, undefined, {
+          numeric: true
+        })
+      );
+
+    if (!files.length) {
+      throw new Error("No se encontraron versiones de Ultron");
+    }
+
+    const latest = {
+      sha: sha,
+      file: files[files.length - 1]
+    };
+
+    writeCache(latest);
+
+    return latest;
+  }
+
+  // CDN DIRECTO
+  function gameUrl(version) {
+    return `https://rawcdn.githack.com/${OWNER}/${REPO}/${version.sha}/${version.file}`;
+  }
+
+  // COMPROBACIÓN INICIAL
+  let resolviendo = resolverRemoto()
+    .then(version => {
+
+      actual = version;
+
+      status.textContent =
+        "Versión lista: " + version.file;
+
+      return version;
+
+    })
+    .catch(error => {
+
+      actual = FALLBACK;
+
+      status.textContent =
+        "Error comprobando versión: " +
+        error.message +
+        ". Se utilizará " +
+        FALLBACK.file;
+
+      return FALLBACK;
+    });
+
+  // LANZAR PORTAL
+  launcher.addEventListener("click", async () => {
+
+    if (lanzado) return;
+
+    lanzado = true;
+
+    // Abrir pestaña nueva inmediatamente.
+    // Debe ejecutarse antes del await para evitar
+    // que Chrome bloquee la ventana emergente.
+
+    const portal = window.open("about:blank", "_blank");
+
+    if (!portal) {
+
+      lanzado = false;
+
+      status.textContent =
+        "Ventana bloqueada. Permite las ventanas emergentes.";
+
+      return;
+    }
+
+    status.textContent = "Iniciando Ultron...";
+
+    try {
+
+      // Esperar a que termine la comprobación de GitHub.
+      const version = await resolviendo;
+
+      if (portal.closed) return;
+
+      const url = gameUrl(version);
+
+      // REDIRECCIÓN DIRECTA AL PORTAL.
+      // No se escribe HTML.
+      // No se crean iframes.
+      // No se carga ningún launcher intermedio.
+
+      portal.location.replace(url);
+
+      status.textContent =
+        "Portal iniciado: " + version.file;
+
+    } catch (error) {
+
+      if (!portal.closed) {
+        portal.location.href = "about:blank";
+      }
+
+      status.textContent =
+        "Error: " + error.message;
+
+      lanzado = false;
+    }
+  });
+
+  // COMPROBAR NUEVAS VERSIONES AL VOLVER
+  document.addEventListener("visibilitychange", async () => {
+
+    if (
+      document.visibilityState !== "visible" ||
+      lanzado
+    ) return;
+
+    try {
+
+      const remoto = await resolverRemoto();
+
+      if (!actual || remoto.sha !== actual.sha) {
+
+        actual = remoto;
+
+        resolviendo = Promise.resolve(remoto);
+
+        status.textContent =
+          "Nueva versión detectada: " +
+          remoto.file;
+      }
+
+    } catch {}
+  });
+
+})();
+</script>
+
+</body>
+</html>
+```
